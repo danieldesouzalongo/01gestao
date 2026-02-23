@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#0071e3">
+    <title>AVV • Sistema Inteligente</title>
+    
+    <!-- CSS Externo -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Font Awesome para ícones profissionais -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Bibliotecas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Fallback para Chart.js -->
+    <script>
+        window.onerror = function(msg, url, line) {
+            if (msg.includes('Chart') || msg.includes('chart')) {
+                console.log('Chart.js não carregou, usando fallback');
+                document.querySelectorAll('[id^="grafico"]').forEach(el => {
+                    el.innerHTML = '<p style="color:var(--text-secondary);">📊 Gráfico temporariamente indisponível</p>';
+                });
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 <span>AVV</span> • Sistema Inteligente</h1>
+            <p style="font-size: 12px; margin-top: 5px;">
+                <span id="temaIndicator">💎 Premium</span> • Dashboard • Vendas • Estoque • Histórico • Cenários • Configurações • Marketplace
+            </p>
+        </div>
+        
+        <!-- ===== SISTEMA DE ABAS COM ÍCONES FONT AWESOME ===== -->
+        <div class="tabs">
+            <div class="tab active" onclick="mudarAba('dashboard')">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </div>
+            <div class="tab" onclick="mudarAba('vendas')">
+                <i class="fas fa-shopping-cart"></i> Vendas
+            </div>
+            <div class="tab" onclick="mudarAba('estoque')">
+                <i class="fas fa-boxes"></i> Estoque
+            </div>
+            <div class="tab" onclick="mudarAba('historico')">
+                <i class="fas fa-history"></i> Histórico
+            </div>
+            <div class="tab" onclick="mudarAba('cenarios')">
+                <i class="fas fa-chart-pie"></i> Cenários
+            </div>
+            <div class="tab" onclick="mudarAba('config')">
+                <i class="fas fa-cog"></i> Configurações
+            </div>
+        </div>
+        
+        <!-- ===== ABA 1: DASHBOARD ===== -->
+        <div id="aba-dashboard" class="tab-content active">
+            <div class="section-title">
+                <i class="fas fa-chart-line icon"></i> DASHBOARD
+            </div>
+            
+            <!-- CARD DA META (LINHA INTEIRA) -->
+            <div style="margin-bottom: 30px;">
+                <div class="config-card" style="background: linear-gradient(135deg, var(--primary-color) 0%, color-mix(in srgb, var(--primary-color) 70%, white 30%) 100%); border: none; opacity: 0.95;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: white; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 32px;">🎯</span>
+                            <div>
+                                <div style="font-size: 18px; font-weight: 600;">META SEMANAL DE LUCRO</div>
+                                <div style="font-size: 12px; opacity: 0.8;">clique no valor para editar</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- VALOR DA META (EDITÁVEL) -->
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Valor da meta</div>
+                        <input type="number" id="dashboardMetaValor" value="1000" step="100" min="0"
+                               style="font-size: 48px; font-weight: 700; width: 250px; text-align: center; 
+                                      background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.5); 
+                                      color: white; border-radius: 15px; padding: 15px;
+                                      outline: none; margin: 0 auto; display: block;"
+                               onchange="atualizarMetaValor(this.value)">
+                    </div>
+                    
+                    <!-- BARRA DE PROGRESSO -->
+                    <div style="margin: 20px 0 15px;">
+                        <div style="display: flex; justify-content: space-between; color: white; margin-bottom: 10px;">
+                            <span>Progresso</span>
+                            <span id="dashboardMetaProgresso" style="font-weight: 600;">0%</span>
+                        </div>
+                        <div style="height: 30px; background: rgba(255,255,255,0.2); border-radius: 15px; overflow: hidden;">
+                            <div id="dashboardMetaBar" style="height: 100%; width: 0%; background: white; border-radius: 15px; transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- STATUS ATUAL -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; color: white; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                        <div>
+                            <span style="font-size: 14px; opacity: 0.9;"><i class="fas fa-dollar-sign"></i> Lucro atual:</span>
+                            <span style="font-size: 22px; font-weight: 700; margin-left: 10px;" id="dashboardLucroAtual">R$ 0,00</span>
+                        </div>
+                        <div>
+                            <span style="font-size: 14px; opacity: 0.9;"><i class="fas fa-hourglass-half"></i> Faltam:</span>
+                            <span style="font-size: 22px; font-weight: 700; margin-left: 10px;" id="dashboardFaltaMeta">R$ 1.000,00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CARDS PRINCIPAIS (4 cards lado a lado) -->
+            <div class="dashboard-grid" style="margin-top: 20px;">
+                <div class="dashboard-card">
+                    <div class="icon"><i class="fas fa-shopping-bag"></i></div>
+                    <div class="value" id="dashboardVendasHoje">0</div>
+                    <div class="label">Vendas hoje</div>
+                    <div class="trend" id="dashboardTrendVendas"><i class="fas fa-chart-line"></i> vs ontem</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="icon"><i class="fas fa-dollar-sign"></i></div>
+                    <div class="value" id="dashboardFaturamentoHoje">R$0</div>
+                    <div class="label">Faturamento hoje</div>
+                    <div class="trend" id="dashboardTrendFaturamento"><i class="fas fa-chart-line"></i> vs ontem</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="icon"><i class="fas fa-percent"></i></div>
+                    <div class="value" id="dashboardMargemHoje">0%</div>
+                    <div class="label">Margem média</div>
+                    <div class="trend" id="dashboardTrendMargem"><i class="fas fa-chart-line"></i> vs ontem</div>
+                </div>
+                <div class="dashboard-card">
+                    <div class="icon"><i class="fas fa-bullseye"></i></div>
+                    <div class="value" id="dashboardMetaCard">0%</div>
+                    <div class="label">Meta</div>
+                    <div class="trend" id="dashboardMetaStatus"><i class="fas fa-clock"></i> R$ 0</div>
+                </div>
+            </div>
+            
+            <!-- RESTO DO DASHBOARD -->
+            <div class="grafico-container">
+                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-chart-bar"></i> COMPARATIVO SEMANAL</h4>
+                <div class="dashboard-comparativo-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div style="background:var(--bg-primary); padding:20px; border-radius:10px;">
+                        <div style="font-size:14px; color:var(--text-secondary);">Semana Atual</div>
+                        <div style="font-size:32px; font-weight:700; color:var(--primary-color);" id="dashboardSemanaAtualItens">0</div>
+                        <div style="font-size:14px;">itens vendidos</div>
+                        <div style="font-size:20px; margin-top:10px;" id="dashboardSemanaAtualLucro">R$0</div>
+                    </div>
+                    <div style="background:var(--bg-primary); padding:20px; border-radius:10px;">
+                        <div style="font-size:14px; color:var(--text-secondary);">Semana Passada</div>
+                        <div style="font-size:32px; font-weight:700; color:#6c757d;" id="dashboardSemanaPassadaItens">0</div>
+                        <div style="font-size:14px;">itens vendidos</div>
+                        <div style="font-size:20px; margin-top:10px;" id="dashboardSemanaPassadaLucro">R$0</div>
+                    </div>
+                </div>
+                <div style="margin-top:20px; text-align:center; font-size:18px;" id="dashboardComparativoMsg"></div>
+            </div>
+            
+            <div class="grafico-container">
+                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-fire"></i> TOP 5 PRODUTOS (7 DIAS)</h4>
+                <div id="dashboardTopProdutos"></div>
+            </div>
+            
+            <div class="grafico-container">
+                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-chart-line"></i> FATURAMENTO DIARIO (7 DIAS)</h4>
+                <div id="graficoFaturamentoDiario"></div>
+            </div>
+            
+            <div class="grafico-container">
+                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-chart-bar"></i> MARGEM DIARIA (7 DIAS)</h4>
+                <div id="graficoMargemDiaria"></div>
+            </div>
+            
+            <div class="dashboard-comparativo-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="config-card">
+                    <h4 style="color:var(--primary-color); margin-bottom:15px;"><i class="fas fa-exclamation-triangle"></i> ALERTAS</h4>
+                    <div id="dashboardAlertas"></div>
+                    <div style="margin-top:15px; display:flex; gap:10px;">
+                        <button class="btn-primary" onclick="mudarAba('estoque')"><i class="fas fa-boxes"></i> Ver Estoque</button>
+                        <button class="btn-secondary" onclick="fazerBackup()"><i class="fas fa-database"></i> Fazer Backup</button>
+                    </div>
+                </div>
+                
+                <div class="config-card">
+                    <h4 style="color:var(--primary-color); margin-bottom:15px;"><i class="fas fa-clock"></i> ÚLTIMAS VENDAS</h4>
+                    <div class="timeline" id="dashboardTimeline"></div>
+                    <button class="btn-primary" style="margin-top:15px; width:100%;" onclick="mudarAba('historico')"><i class="fas fa-history"></i> Ver Histórico Completo</button>
+                </div>
+            </div>
+            
+            <div class="config-card" style="margin-top:20px;">
+                <h4 style="color:var(--primary-color); margin-bottom:15px;"><i class="fas fa-chart-line"></i> PREVISÃO PRÓXIMA SEMANA</h4>
+                <div class="dashboard-previsao-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
+                    <div>
+                        <div style="font-size:14px; color:var(--text-secondary);">Itens</div>
+                        <div style="font-size:28px; font-weight:700; color:var(--primary-color);" id="dashboardPrevisaoItens">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size:14px; color:var(--text-secondary);">Faturamento</div>
+                        <div style="font-size:28px; font-weight:700; color:var(--primary-color);" id="dashboardPrevisaoFaturamento">R$0</div>
+                    </div>
+                    <div>
+                        <div style="font-size:14px; color:var(--text-secondary);">Estoque atual</div>
+                        <div style="font-size:28px; font-weight:700; color:var(--primary-color);" id="dashboardPrevisaoEstoque">0</div>
+                    </div>
+                </div>
+                <div style="margin-top:15px; padding:10px; background:var(--bg-primary); border-radius:8px;" id="dashboardPrevisaoAlerta"></div>
+            </div>
+        </div>
+        
+        <!-- ===== ABA 2: VENDAS (COM BOTÃO VENDER TODOS) ===== -->
+        <div id="aba-vendas" class="tab-content">
+            
+            <!-- PRODUTOS DA SEMANA -->
+            <div class="section-title">
+                <i class="fas fa-clipboard-list icon"></i> PRODUTOS
+                <span style="font-size:14px; color:var(--primary-color);">⬅️ Clique em "Vender" para confirmar a venda da linha</span>
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn-primary" onclick="adicionarLinhaVendas()" 
+                        title="Adicionar um novo produto à lista de vendas">
+                    <i class="fas fa-plus"></i> Adicionar Produto
+                </button>
+                <button class="btn-warning" onclick="limparTodasLinhas()"
+                        title="Remove todos os produtos da lista (cuidado!)">
+                    <i class="fas fa-trash-alt"></i> Limpar Tudo
+                </button>
+                <button class="btn-success" onclick="vendas.confirmarTodasVendas()"
+                        title="Confirma todas as vendas da lista de uma só vez"
+                        style="background: linear-gradient(135deg, #17a2b8, #0d6efd);">
+                    <i class="fas fa-rocket"></i> Vender Todos
+                </button>
+            </div>
+            
+            <div class="tabela-container">
+                <table class="tabela-produtos">
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-user"></i> Cliente</th>
+                            <th><i class="fas fa-box"></i> Produto</th>
+                            <th><i class="fas fa-dollar-sign"></i> Preço</th>
+                            <th><i class="fas fa-weight"></i> Peso(g)</th>
+                            <th><i class="fas fa-sort-numeric-up"></i> Qtd</th>
+                            <th><i class="fas fa-dollar-sign"></i> Custo</th>
+                            <th><i class="fas fa-cog"></i> Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vendasBody"></tbody>
+                </table>
+            </div>
+            
+            <!-- RESUMO GERAL -->
+            <div class="section-title">
+                <i class="fas fa-chart-pie icon"></i> RESUMO GERAL
+            </div>
+            
+            <div class="resumo-grid">
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-cube"></i> Itens</div>
+                    <div class="value" id="totalItens">0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-shopping-bag"></i> Pedidos</div>
+                    <div class="value" id="totalPedidos">0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-ticket-alt"></i> Ticket Médio</div>
+                    <div class="value" id="ticketMedio">R$0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-chart-line"></i> Itens/Pedido</div>
+                    <div class="value" id="itensPorPedido">0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-weight"></i> Peso Total</div>
+                    <div class="value" id="pesoTotal">0kg</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-truck"></i> Viagens</div>
+                    <div class="value" id="totalViagens">0</div>
+                </div>
+            </div>
+            
+            <!-- TIPO DE ANÚNCIO -->
+            <div class="section-title">
+                <i class="fas fa-tag icon"></i> TIPO DE ANÚNCIO
+            </div>
+            
+            <div class="selector-card">
+                <div class="selector-options">
+                    <div id="optionClassico" class="selector-option selected" onclick="selecionarAnuncio('classico')">
+                        <div class="name"><i class="fas fa-star"></i> Clássico</div>
+                        <div class="rate">14%</div>
+                    </div>
+                    <div id="optionPremium" class="selector-option" onclick="selecionarAnuncio('premium')">
+                        <div class="name"><i class="fas fa-crown"></i> Premium</div>
+                        <div class="rate">19%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- RESULTADOS DETALHADOS (RECOLHÍVEL) -->
+<div style="margin: 20px 0;">
+    <div onclick="toggleResultados()" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 15px;">
+        <span id="resultadosToggleIcon" style="font-size: 20px;">▼</span>
+        <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-chart-bar"></i> RESULTADOS DETALHADOS</span>
+        <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">clique para recolher/expandir</span>
+    </div>
+    
+    <div id="resultadosPanel">
+        <div class="resultados-container">
+            <div class="result-card">
+                <h4><i class="fas fa-calculator"></i> MÉDIAS POR PRODUTO</h4>
+                <div class="result-item">
+                    <span>Preço médio</span>
+                    <span class="result-value" id="precoMedio">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Custo médio</span>
+                    <span class="result-value" id="custoMedio">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Comissão média</span>
+                    <span class="result-value" id="comissaoMedia">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Frete médio</span>
+                    <span class="result-value" id="freteMedio">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Deslocamento médio</span>
+                    <span class="result-value" id="deslocamentoMedio">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span><i class="fas fa-star" style="color:gold;"></i> Lucro médio</span>
+                    <span class="result-value highlight" id="lucroMedio">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Margem média</span>
+                    <span class="result-value" id="margemMedia">0%</span>
+                </div>
+            </div>
+            
+            <div class="result-card">
+                <h4><i class="fas fa-chart-line"></i> TOTAIS DA SEMANA</h4>
+                <div class="result-item">
+                    <span>Faturamento</span>
+                    <span class="result-value" id="faturamentoTotal">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Custo produtos</span>
+                    <span class="result-value" id="custoTotalProdutos">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Comissão total</span>
+                    <span class="result-value" id="comissaoTotal">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Frete total</span>
+                    <span class="result-value" id="freteTotal">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Embalagem total</span>
+                    <span class="result-value" id="embalagemTotal">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Deslocamento total</span>
+                    <span class="result-value" id="deslocamentoTotal">R$0</span>
+                </div>
+                <div class="result-item" style="border-top:2px solid var(--primary-color);">
+                    <span style="font-size:18px;"><i class="fas fa-dollar-sign" style="color:green;"></i> LUCRO TOTAL</span>
+                    <span class="result-value highlight" id="lucroTotal">R$0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+                    
+            <!-- CONFIGURAÇÕES AVANÇADAS (RECOLHÍVEL) -->
+            <div style="margin: 20px 0;">
+                <div onclick="toggleConfig()" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color);">
+                    <span id="configToggleIcon" style="font-size: 20px;">▶</span>
+                    <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-cog"></i> CONFIGURAÇÕES AVANÇADAS</span>
+                    <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">clique para expandir</span>
+                </div>
+                
+                <div id="configPanel" style="display: none; margin-top: 15px;">
+                    <div class="input-grid" style="margin-bottom: 0;">
+                        <div class="input-card">
+                            <label><i class="fas fa-box"></i> Embalagem base (R$)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="embalagemBase" value="5.50" step="0.10">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-exclamation-triangle"></i> Outros custos (R$)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="outrosCustos" value="1.00" step="0.10">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-weight"></i> Limite/viagem (kg)</label>
+                            <div class="input-wrapper">
+                                <select id="limiteViagem">
+                                    <option value="5" selected>5 kg</option>
+                                    <option value="10">10 kg</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-road"></i> Distância (km)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="distancia" value="3.0" step="0.1">
+                                <span class="currency">km</span>
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-gas-pump"></i> Consumo (km/l)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="consumo" value="10.0" step="0.1">
+                                <span class="currency">km/l</span>
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-dollar-sign"></i> Gasolina (R$/l)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="precoGasolina" value="6.00" step="0.10">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-calculator"></i> Custo por ida</label>
+                            <div class="input-wrapper" style="background:var(--bg-secondary);">
+                                <span class="currency">R$</span>
+                                <span id="custoPorIdaDisplay">1,80</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- STATUS (TAMBÉM CENTRALIZADO) -->
+<div id="statusCard" class="status-card status-bom" style="text-align: center;">
+    <i class="fas fa-chart-line"></i> ANÁLISE
+</div>
+         <!-- STATUS -->
+<!-- RECOMENDAÇÃO (AGORA CENTRALIZADA) -->
+<div id="recomendacao" style="background:var(--bg-secondary); padding:15px; border-radius:8px; margin:20px 0; color:var(--text-primary); text-align: center;">
+    <!-- O conteúdo será inserido pelo JavaScript -->
+</div>
+
+        <!-- ===== ABA 3: ESTOQUE ===== -->
+        <div id="aba-estoque" class="tab-content">
+            <div class="section-title">
+                <i class="fas fa-boxes icon"></i> PRODUTOS EM ESTOQUE
+            </div>
+            
+            <div class="btn-group">
+                <button class="btn-primary" onclick="adicionarProdutoEstoque()"
+                        title="Adicionar um novo produto ao estoque">
+                    <i class="fas fa-plus"></i> Novo Produto
+                </button>
+            </div>
+            
+            <div class="tabela-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-box"></i> Produto</th>
+                            <th><i class="fas fa-sort-numeric-up"></i> Quantidade</th>
+                            <th><i class="fas fa-dollar-sign"></i> Custo (R$)</th>
+                            <th><i class="fas fa-weight"></i> Peso (g)</th>
+                            <th><i class="fas fa-dollar-sign"></i> Preço (R$)</th>
+                            <th><i class="fas fa-cog"></i> Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="estoqueBody"></tbody>
+                </table>
+            </div>
+            
+            <div id="alertasEstoque" style="margin-top:20px;"></div>
+        </div>
+        
+        <!-- ===== ABA 4: HISTÓRICO ===== -->
+        <div id="aba-historico" class="tab-content">
+            <div class="section-title">
+                <i class="fas fa-history icon"></i> HISTORICO DE VENDAS
+            </div>
+            
+            <div class="config-card" style="margin-bottom:20px;">
+                <h4 style="color:var(--primary-color); margin-bottom:15px;"><i class="fas fa-filter"></i> Filtros Avancados</h4>
+                <div class="historico-filtros-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+                    <div>
+                        <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:5px;">Buscar por cliente ou produto:</label>
+                        <input type="text" id="historicoSearchInput" placeholder="Digite aqui..." style="width:100%; padding:8px; border:2px solid var(--primary-color); border-radius:8px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:5px;">Data Inicial:</label>
+                        <input type="date" id="historicoDataInicio" style="width:100%; padding:8px; border:2px solid var(--primary-color); border-radius:8px; font-size:14px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:5px;">Data Final:</label>
+                        <input type="date" id="historicoDataFim" style="width:100%; padding:8px; border:2px solid var(--primary-color); border-radius:8px; font-size:14px;">
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-secondary" onclick="filtrarHistorico('hoje')"><i class="fas fa-calendar-day"></i> Hoje</button>
+                <button class="btn-secondary" onclick="filtrarHistorico('semana')"><i class="fas fa-calendar-week"></i> Esta Semana</button>
+                <button class="btn-secondary" onclick="filtrarHistorico('mes')"><i class="fas fa-calendar-alt"></i> Este Mês</button>
+                <button class="btn-secondary" onclick="filtrarHistorico('todos')"><i class="fas fa-calendar"></i> Todos</button>
+                <button class="btn-primary" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> CSV</button>
+                <button class="btn-success" onclick="gerarPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+            </div>
+            
+            <div class="grafico-container">
+                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-chart-bar"></i> PRODUTOS MAIS VENDIDOS</h4>
+                <div id="graficoMaisVendidos"></div>
+            </div>
+            
+            <div class="tabela-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-clock"></i> Data/Hora</th>
+                            <th><i class="fas fa-user"></i> Cliente</th>
+                            <th><i class="fas fa-box"></i> Produto</th>
+                            <th><i class="fas fa-sort-numeric-up"></i> Qtd</th>
+                            <th><i class="fas fa-dollar-sign"></i> Preço</th>
+                            <th><i class="fas fa-dollar-sign"></i> Total</th>
+                            <th><i class="fas fa-dollar-sign"></i> Lucro</th>
+                            <th><i class="fas fa-cog"></i> Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historicoBody"></tbody>
+                </table>
+            </div>
+            
+            <div class="resumo-grid" style="grid-template-columns:repeat(5,1fr);">
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-shopping-bag"></i> Vendas</div>
+                    <div class="value" id="totalVendasHist">0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-cube"></i> Itens</div>
+                    <div class="value" id="totalItensHist">0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-dollar-sign"></i> Faturamento</div>
+                    <div class="value" id="faturamentoHist">R$0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-dollar-sign"></i> Lucro</div>
+                    <div class="value" id="lucroHist">R$0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-percent"></i> Margem</div>
+                    <div class="value" id="margemHist">0%</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ===== ABA 5: CENÁRIOS ===== -->
+        <div id="aba-cenarios" class="tab-content">
+            <div class="section-title">
+                <i class="fas fa-chart-line icon"></i> CENÁRIOS E PREVISÕES
+            </div>
+            
+            <div class="resumo-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:30px;">
+                <div class="resumo-card">
+                    <div class="value" id="basePreco">R$0</div>
+                    <div class="label"><i class="fas fa-dollar-sign"></i> Preço médio</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="value" id="baseCusto">R$0</div>
+                    <div class="label"><i class="fas fa-dollar-sign"></i> Custo médio</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="value" id="baseLucro">R$0</div>
+                    <div class="label"><i class="fas fa-dollar-sign"></i> Lucro médio</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="value" id="baseMargem">0%</div>
+                    <div class="label"><i class="fas fa-percent"></i> Margem atual</div>
+                </div>
+            </div>
+            
+            <div class="cenarios-grid">
+                <div class="cenario-card">
+                    <div class="titulo"><i class="fas fa-arrow-up"></i> AUMENTAR PREÇO</div>
+                    <div class="btn-group" style="justify-content:center;">
+                        <button class="btn-primary" onclick="simularPreco(5)">+5%</button>
+                        <button class="btn-primary" onclick="simularPreco(10)">+10%</button>
+                        <button class="btn-primary" onclick="simularPreco(15)">+15%</button>
+                    </div>
+                    <div class="result-item" style="margin-top:15px;">
+                        <span>Novo lucro:</span>
+                        <span id="cenarioPrecoLucro">R$0</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Nova margem:</span>
+                        <span id="cenarioPrecoMargem">0%</span>
+                    </div>
+                </div>
+                
+                <div class="cenario-card">
+                    <div class="titulo"><i class="fas fa-arrow-down"></i> REDUZIR CUSTO</div>
+                    <div class="btn-group" style="justify-content:center;">
+                        <button class="btn-primary" onclick="simularCusto(5)">-5%</button>
+                        <button class="btn-primary" onclick="simularCusto(10)">-10%</button>
+                        <button class="btn-primary" onclick="simularCusto(15)">-15%</button>
+                    </div>
+                    <div class="result-item" style="margin-top:15px;">
+                        <span>Novo lucro:</span>
+                        <span id="cenarioCustoLucro">R$0</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Nova margem:</span>
+                        <span id="cenarioCustoMargem">0%</span>
+                    </div>
+                </div>
+                
+                <div class="cenario-card">
+                    <div class="titulo"><i class="fas fa-tag"></i> TROCAR ANÚNCIO</div>
+                    <div class="btn-group" style="justify-content:center;">
+                        <button class="btn-primary" onclick="simularAnuncio('classico')"><i class="fas fa-star"></i> Clássico</button>
+                        <button class="btn-primary" onclick="simularAnuncio('premium')"><i class="fas fa-crown"></i> Premium</button>
+                    </div>
+                    <div class="result-item" style="margin-top:15px;">
+                        <span>Novo lucro:</span>
+                        <span id="cenarioAnuncioLucro">R$0</span>
+                    </div>
+                    <div class="result-item">
+                        <span>Nova margem:</span>
+                        <span id="cenarioAnuncioMargem">0%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-title">
+                <i class="fas fa-robot icon"></i> PREVISÃO INTELIGENTE
+            </div>
+            
+            <div class="config-card">
+                <div id="previsaoIA"></div>
+            </div>
+            
+            <div class="section-title">
+                <i class="fas fa-lightbulb icon"></i> DICAS PERSONALIZADAS
+            </div>
+            
+            <div class="dicas-container" id="dicasContainer"></div>
+        </div>
+        
+        <!-- ===== ABA 6: CONFIGURAÇÕES ===== -->
+        <div id="aba-config" class="tab-content">
+            <div class="section-title">
+                <i class="fas fa-cog icon"></i> CONFIGURAÇÕES DO SISTEMA
+            </div>
+            
+            <!-- TEMA -->
+            <div class="config-card">
+                <h3 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-palette"></i> TEMA</h3>
+                
+                <div class="config-item">
+                    <div class="config-label">
+                        <span>🌓 Modo:</span>
+                    </div>
+                    <div class="config-toggle" style="flex-wrap: wrap; gap: 5px;">
+                        <button id="temaPremiumBtn" class="active" onclick="mudarTema('premium')"><i class="fas fa-gem"></i> Premium</button>
+                        <button id="temaDarkBtn" onclick="mudarTema('dark')"><i class="fas fa-moon"></i> Dark</button>
+                        <button id="temaSmartBtn" onclick="mudarTema('smart')"><i class="fas fa-fire"></i> Smart</button>
+                        <button id="temaNatureBtn" onclick="mudarTema('nature')"><i class="fas fa-leaf"></i> Nature</button>
+                    </div>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-label">
+                        <span>🔄 Automático:</span>
+                    </div>
+                    <input type="checkbox" id="temaAuto" onchange="toggleTemaAuto()"> Seguir sistema
+                </div>
+            </div>
+            
+            <!-- BACKUP -->
+            <div class="config-card">
+                <h3 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-database"></i> BACKUP</h3>
+                
+                <div class="config-item">
+                    <div class="config-label">
+                        <span><i class="fas fa-calendar-alt"></i> Último backup:</span>
+                    </div>
+                    <div id="ultimoBackup">Nunca</div>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-label">
+                        <span><i class="fas fa-sync-alt"></i> Backup automático:</span>
+                    </div>
+                    <div class="config-toggle">
+                        <button id="backupAtivoBtn" class="active" onclick="toggleBackup(true)">Ativado</button>
+                        <button id="backupInativoBtn" onclick="toggleBackup(false)">Desativado</button>
+                    </div>
+                </div>
+                
+                <div class="config-item">
+                    <div class="config-label">
+                        <span><i class="fas fa-clock"></i> Frequência:</span>
+                    </div>
+                    <select id="backupFrequencia" style="padding:8px; border:2px solid var(--primary-color); border-radius:8px;">
+                        <option value="1">Diariamente</option>
+                        <option value="7">Semanalmente</option>
+                        <option value="30">Mensalmente</option>
+                    </select>
+                </div>
+                
+                <div class="btn-group" style="margin-top:20px;">
+                    <button class="btn-primary" onclick="fazerBackup()" title="Fazer backup manual agora">
+                        <i class="fas fa-download"></i> FAZER BACKUP AGORA
+                    </button>
+                    <button class="btn-secondary" onclick="restaurarBackup()" title="Restaurar dados de um backup">
+                        <i class="fas fa-upload"></i> RESTAURAR BACKUP
+                    </button>
+                </div>
+            </div>
+            
+            <!-- MARKETPLACE -->
+            <div class="config-card" style="margin-top:20px;">
+                <h3 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-store"></i> INTEGRAÇÃO COM MARKETPLACE</h3>
+                
+                <div class="ml-status-card">
+                    <div class="ml-status-icon"><i class="fas fa-store"></i></div>
+                    <div class="ml-status-info">
+                        <div class="ml-status-title">Status da Integração</div>
+                        <div class="ml-status-desc" id="mlStatusDesc">Desconectado do marketplace</div>
+                    </div>
+                    <div id="mlStatusBadge" class="ml-status-badge ml-badge-disconnected"><i class="fas fa-times-circle"></i> Desconectado</div>
+                </div>
+                
+                <div class="btn-group" style="margin:20px 0;">
+                    <button class="btn-primary" onclick="conectarMarketplace()" id="mlConnectBtn" title="Conectar ao marketplace">
+                        <i class="fas fa-plug"></i> CONECTAR COM MARKETPLACE
+                    </button>
+                    <button class="btn-secondary" onclick="desconectarMarketplace()" id="mlDisconnectBtn" style="display:none;" title="Desconectar do marketplace">
+                        <i class="fas fa-unlink"></i> DESCONECTAR
+                    </button>
+                </div>
+                
+                <div id="mlConfigSection" style="display:none;">
+                    <h4 style="color:var(--primary-color); margin:20px 0 10px;"><i class="fas fa-sliders-h"></i> Configurações</h4>
+                    
+                    <div class="ml-sync-toggle">
+                        <input type="checkbox" id="mlSyncVendas" checked onchange="salvarConfigML()">
+                        <label for="mlSyncVendas"><i class="fas fa-sync-alt"></i> Importar vendas automaticamente</label>
+                    </div>
+                    
+                    <div class="ml-sync-toggle">
+                        <input type="checkbox" id="mlSyncEstoque" checked onchange="salvarConfigML()">
+                        <label for="mlSyncEstoque"><i class="fas fa-boxes"></i> Sincronizar estoque</label>
+                    </div>
+                    
+                    <h4 style="color:var(--primary-color); margin:20px 0 10px;"><i class="fas fa-chart-bar"></i> Estatísticas</h4>
+                    
+                    <div class="ml-stats-grid">
+                        <div class="ml-stat-card">
+                            <div class="ml-stat-value" id="mlUltimaSync">--</div>
+                            <div class="ml-stat-label"><i class="fas fa-clock"></i> Última sincronização</div>
+                        </div>
+                        <div class="ml-stat-card">
+                            <div class="ml-stat-value" id="mlProdutosVinculados">0</div>
+                            <div class="ml-stat-label"><i class="fas fa-link"></i> Produtos vinculados</div>
+                        </div>
+                    </div>
+                    
+                    <h4 style="color:var(--primary-color); margin:20px 0 10px;"><i class="fas fa-boxes"></i> Produtos Vinculados</h4>
+                    
+                    <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px;">
+                        <table class="ml-products-table">
+                            <thead>
+                                <tr>
+                                    <th><i class="fas fa-box"></i> Produto</th>
+                                    <th><i class="fas fa-id-card"></i> ID Marketplace</th>
+                                    <th><i class="fas fa-sort-numeric-up"></i> Estoque</th>
+                                    <th><i class="fas fa-info-circle"></i> Status</th>
+                                    <th><i class="fas fa-cog"></i> Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mlProductsBody">
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding:20px;">
+                                        <i class="fas fa-info-circle"></i> Nenhum produto vinculado.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <i class="fas fa-chart-line"></i> AVV • Sistema Inteligente
+        </div>
+    </div>
+    
+    <!-- JavaScript Externo -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>
