@@ -32,6 +32,25 @@ class GerenciadorEstoque {
         
         tbody.innerHTML = html;
         
+        // Totais: número de produtos, quantidade, custo total, peso total, valor a preço
+        const n = estado.state.produtos.length;
+        const totalQtd = estado.state.produtos.reduce((s, p) => s + (p.quantidade || 0), 0);
+        const totalCusto = estado.state.produtos.reduce((s, p) => s + (p.custo || 0) * (p.quantidade || 0), 0);
+        const totalPeso = estado.state.produtos.reduce((s, p) => s + (p.peso || 0) * (p.quantidade || 0), 0);
+        const totalPreco = estado.state.produtos.reduce((s, p) => s + (p.preco || 0) * (p.quantidade || 0), 0);
+        
+        const fmt = (v) => 'R$ ' + (Number(v).toFixed(2)).replace('.', ',');
+        const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        set('estoqueTotalQtd', totalQtd);
+        set('estoqueTotalCusto', fmt(totalCusto));
+        set('estoqueTotalPeso', totalPeso + ' g');
+        set('estoqueTotalPreco', fmt(totalPreco));
+        set('estoqueResumoProdutos', n);
+        set('estoqueResumoQuantidade', totalQtd);
+        set('estoqueResumoCusto', fmt(totalCusto));
+        set('estoqueResumoPeso', totalPeso >= 1000 ? (totalPeso / 1000).toFixed(2).replace('.', ',') + ' kg' : totalPeso + ' g');
+        set('estoqueResumoPreco', fmt(totalPreco));
+        
         // Atualiza alertas de estoque
         this.atualizarAlertas();
     }

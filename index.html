@@ -489,7 +489,40 @@
                         </tr>
                     </thead>
                     <tbody id="estoqueBody"></tbody>
+                    <tfoot id="estoqueTotais">
+                        <tr style="background: var(--bg-secondary); font-weight: 700; border-top: 2px solid var(--primary-color);">
+                            <td><i class="fas fa-cubes"></i> Total</td>
+                            <td id="estoqueTotalQtd">0</td>
+                            <td id="estoqueTotalCusto">R$ 0,00</td>
+                            <td id="estoqueTotalPeso">0 g</td>
+                            <td id="estoqueTotalPreco">R$ 0,00</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
+            </div>
+            
+            <div class="resumo-grid" style="margin-top: 16px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-box"></i> Produtos</div>
+                    <div class="value" id="estoqueResumoProdutos">0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-sort-numeric-up"></i> Quantidade</div>
+                    <div class="value" id="estoqueResumoQuantidade">0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-dollar-sign"></i> Custo total</div>
+                    <div class="value" id="estoqueResumoCusto">R$ 0</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-weight"></i> Peso total</div>
+                    <div class="value" id="estoqueResumoPeso">0 kg</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label"><i class="fas fa-tag"></i> Valor (preço)</div>
+                    <div class="value" id="estoqueResumoPreco">R$ 0</div>
+                </div>
             </div>
             
             <div id="alertasEstoque" style="margin-top:20px;"></div>
