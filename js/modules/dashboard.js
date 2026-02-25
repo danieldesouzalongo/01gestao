@@ -54,6 +54,8 @@ class GerenciadorDashboard {
         this.atualizarAlertas();
         this.atualizarGraficoFaturamento();
         this.atualizarGraficoMargemDiaria();
+        this.atualizarResumoCliente();
+        this.atualizarMetaTimeline();
     }
     
     // ===== CARDS PRINCIPAIS =====
@@ -142,7 +144,9 @@ class GerenciadorDashboard {
         
         return {
             itens: vendas.reduce((s, v) => s + v.quantidade, 0),
-            lucro: vendas.reduce((s, v) => s + v.lucro, 0)
+            lucro: vendas.reduce((s, v) => s + v.lucro, 0),
+            dataInicio,
+            dataFim
         };
     }
     
@@ -336,6 +340,84 @@ class GerenciadorDashboard {
         return estado.state.historicoVendas
             .filter(v => new Date(v.data) >= semanaAtras)
             .reduce((s, v) => s + v.lucro, 0);
+    }
+
+    atualizarMetaTimeline() {
+        const tbody = document.getElementById('dashboardMetaTimeline');
+        if (!tbody) return;
+
+        const meta = (typeof window.metaConfig !== 'undefined' ? window.metaConfig.valor : 1000);
+        const linhas = [];
+        const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+        for (let offset = 0; offset < 4; offset++) {
+            const dados = this.calcularDadosSemana(offset);
+            const lucro = dados.lucro;
+            const progresso = meta > 0 ? (lucro / meta) * 100 : 0;
+
+            let statusTexto = '';
+            let statusClasse = '';
+
+            if (meta <= 0 || lucro === 0) {
+                statusTexto = 'Sem dados';
+                statusClasse = 'text-gray-400';
+            } else if (progresso >= 100) {
+                statusTexto = 'Meta atingida';
+                statusClasse = 'text-green-600';
+            } else if (progresso >= 70) {
+                statusTexto = 'Próximo da meta';
+                statusClasse = 'text-yellow-600';
+            } else {
+                statusTexto = 'Abaixo da meta';
+                statusClasse = 'text-red-600';
+            }
+
+            const labelSemana = offset === 0 ? 'Esta semana' :
+                offset === 1 ? 'Semana passada' :
+                `Há ${offset} semanas`;
+            const periodo = dados.dataInicio && dados.dataFim ? ` (${fmt(dados.dataInicio)} – ${fmt(dados.dataFim)})` : '';
+
+            linhas.push(`
+                <tr>
+                    <td>${labelSemana}${periodo}</td>
+                    <td>${formatarReal(lucro)}</td>
+                    <td>${formatarReal(meta)}</td>
+                    <td class="${statusClasse}">${statusTexto}</td>
+                </tr>
+            `);
+        }
+
+        tbody.innerHTML = linhas.join('');
+    }
+
+    atualizarResumoCliente() {
+        const el = document.getElementById('dashboardResumoCliente');
+        if (!el) return;
+
+        const hoje = new Date();
+        const semanaAtras = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        const vendasSemana = estado.state.historicoVendas.filter(v => new Date(v.data) >= semanaAtras);
+
+        if (vendasSemana.length === 0) {
+            el.textContent = 'Nenhuma venda registrada nos últimos 7 dias.';
+            return;
+        }
+
+        const quantidade = vendasSemana.reduce((s, v) => s + v.quantidade, 0);
+        const faturamento = vendasSemana.reduce((s, v) => s + v.total, 0);
+        const lucro = vendasSemana.reduce((s, v) => s + v.lucro, 0);
+        const margem = faturamento > 0 ? (lucro / faturamento) * 100 : 0;
+
+        const meta = (typeof window.metaConfig !== 'undefined' ? window.metaConfig.valor : 1000);
+        const progressoMeta = meta > 0 ? (lucro / meta) * 100 : 0;
+
+        const partes = [];
+        partes.push(`Nos últimos 7 dias: ${quantidade} venda(s), faturamento de ${formatarReal(faturamento)} e lucro de ${formatarReal(lucro)}.`);
+        partes.push(`Margem líquida média de ${formatarPercentual(margem)}.`);
+        partes.push(`Progresso em relação à meta: ${progressoMeta.toFixed(0)}%.`);
+
+        el.textContent = partes.join(' ');
     }
     
     calcularFaturamentoPorDia() {

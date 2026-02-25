@@ -1933,9 +1933,11 @@ td input:focus, td select:focus { border-color: var(--primary-color); outline: n
     background: transparent;
     color: var(--text-muted);
     text-align: center;
-    padding: 10px 16px;
-    font-size: 11px;
+    padding: 8px 16px;
+    font-size: 10px;
     font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     border-top: 1px solid var(--border-subtle);
 }
 

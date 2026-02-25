@@ -9,6 +9,7 @@ class GerenciadorVendas {
         this.tipoAnuncio = 'classico';
         this.contadorLinhas = 0;
         this.clienteCores = {};
+        this.ultimoResultado = null;
         this.init();
     }
 
@@ -67,6 +68,29 @@ class GerenciadorVendas {
         }
         if (vendaQtd) {
             vendaQtd.addEventListener('input', debounce(() => this.atualizarPreviewVenda(), 200));
+        }
+
+        // Toggle do resumo executivo na aba Vendas
+        const toggleResumoBtn = document.getElementById('toggleResumoExecutivoBtn');
+        if (toggleResumoBtn) {
+            toggleResumoBtn.addEventListener('click', () => {
+                const resumoExec = document.getElementById('resumoExecutivo');
+                const resumoGeralGrid = document.getElementById('resumoGeralGrid');
+                if (!resumoExec || !resumoGeralGrid) return;
+
+                const mostrandoExec = resumoExec.style.display === 'grid' || resumoExec.style.display === '';
+                if (mostrandoExec) {
+                    // Volta para visão completa
+                    resumoExec.style.display = 'none';
+                    resumoGeralGrid.style.display = 'grid';
+                    toggleResumoBtn.textContent = 'Ver só o essencial';
+                } else {
+                    // Mostra visão compacta
+                    resumoExec.style.display = 'grid';
+                    resumoGeralGrid.style.display = 'none';
+                    toggleResumoBtn.textContent = 'Ver tudo';
+                }
+            });
         }
     }
 
@@ -574,14 +598,19 @@ class GerenciadorVendas {
             custoPorIdaEl.innerText = custoPorIda.toFixed(2).replace('.', ',');
         }
 
+        const resultadoAnterior = this.ultimoResultado;
+
         this.aplicarCoresClientes();
         const resultado = this.calcularTotais();
         this.atualizarInterface(resultado);
         this.atualizarMeta(resultado.lucroTotal);
         this.atualizarStatus(resultado);
+        this.atualizarImpactoUltimaMudanca(resultadoAnterior, resultado);
         this.sincronizarSelectConfirmacao();
         // Notifica outros módulos (ex.: precificação inteligente) que os resultados foram recalculados
         window.dispatchEvent(new CustomEvent('vendasAtualizadas', { detail: resultado }));
+
+        this.ultimoResultado = resultado;
     }
 
     aplicarCoresClientes() {
@@ -612,6 +641,7 @@ class GerenciadorVendas {
         let somaDeslocamento = 0;
         let pesoTotal = 0;
         let somaReceitaCartao = 0;
+        let somaReceitaOutros = 0;
 
         const pedidos = {};
 
@@ -638,6 +668,8 @@ class GerenciadorVendas {
 
             if (tipoPagamento === 'cartao') {
                 somaReceitaCartao += preco * qtd;
+            } else {
+                somaReceitaOutros += preco * qtd;
             }
         });
 
@@ -695,6 +727,10 @@ class GerenciadorVendas {
         const lucroTotal = lucroAntesCustosOp - custosOperacionaisTotais;
         const margemMedia = somaPrecos > 0 ? (lucroTotal / somaPrecos) * 100 : 0;
 
+        // Simulação de canal próprio (sem comissão de plataforma, mantendo demais custos)
+        const lucroCanalProprio = lucroTotal + comissaoTotal;
+        const margemCanalProprio = somaPrecos > 0 ? (lucroCanalProprio / somaPrecos) * 100 : 0;
+
         const precoMedio = totalItens > 0 ? somaPrecos / totalItens : 0;
         const custoMedio = totalItens > 0 ? somaCustos / totalItens : 0;
         const comissaoMedia = totalItens > 0 ? comissaoTotal / totalItens : 0;
@@ -714,7 +750,9 @@ class GerenciadorVendas {
             somaEmbalagem, somaDeslocamento, comissaoTotal, lucroAntesCustosOp, lucroTotal, margemMedia,
             ticketMedio, itensPorPedido, pesoTotal, totalViagens,
             precoMedio, custoMedio, comissaoMedia, freteMedio, deslocamentoMedio,
-            lucroMedio, margemMediaItem, custosOperacionaisTotais
+            lucroMedio, margemMediaItem, custosOperacionaisTotais,
+            lucroCanalProprio, margemCanalProprio,
+            somaReceitaCartao, somaReceitaOutros
         };
     }
 
@@ -743,6 +781,97 @@ class GerenciadorVendas {
         this.atualizarElemento('lucroAntesCustosOp', formatarReal(resultado.lucroAntesCustosOp));
         this.atualizarElemento('custosOperacionaisTotal', formatarReal(resultado.custosOperacionaisTotais));
         this.atualizarElemento('lucroTotal', formatarReal(resultado.lucroTotal));
+
+        // Resumo executivo (compacto)
+        this.atualizarElemento('resumoExecLucro', formatarReal(resultado.lucroTotal));
+        this.atualizarElemento('resumoExecMargem', resultado.margemMedia.toFixed(1) + '%');
+        this.atualizarElemento('resumoExecFaturamento', formatarReal(resultado.somaPrecos));
+
+        // Comparador de canais (simples)
+        this.atualizarElemento('canalAtualMargem', formatarPercentual(resultado.margemMedia || 0));
+        if (typeof resultado.margemCanalProprio === 'number') {
+            this.atualizarElemento('canalProprioMargem', formatarPercentual(resultado.margemCanalProprio));
+            const deltaLucro = (resultado.lucroCanalProprio || 0) - (resultado.lucroTotal || 0);
+            this.atualizarElemento('canalProprioDeltaLucro', formatarReal(deltaLucro));
+        }
+
+        // Distribuição dos meios de pagamento
+        const resumoPagEl = document.getElementById('resumoPagamentos');
+        if (resumoPagEl) {
+            const totalReceita = resultado.somaPrecos || 0;
+            const receitaCartao = typeof resultado.somaReceitaCartao === 'number' ? resultado.somaReceitaCartao : 0;
+            const receitaOutros = totalReceita - receitaCartao;
+
+            if (totalReceita <= 0) {
+                resumoPagEl.style.display = 'none';
+                resumoPagEl.textContent = '';
+            } else {
+                const pctCartao = (receitaCartao / totalReceita) * 100;
+                const pctOutros = (receitaOutros / totalReceita) * 100;
+                resumoPagEl.textContent = `Distribuição dos recebimentos: Cartão ${formatarReal(receitaCartao)} (${pctCartao.toFixed(0)}%) · Pix/Boleto ${formatarReal(receitaOutros)} (${pctOutros.toFixed(0)}%)`;
+                resumoPagEl.style.display = '';
+            }
+        }
+
+        // Comentário de margem dentro de "Totais da semana"
+        const hintWrapper = document.getElementById('vendasMargemHintWrapper');
+        const hintEl = document.getElementById('vendasMargemHint');
+
+        if (hintWrapper && hintEl) {
+            const margem = resultado.margemMedia || 0;
+            const temDados = (resultado.totalItens || 0) > 0;
+
+            if (!temDados || margem >= 30) {
+                // Sem itens ou margem saudável → não mostra nada
+                hintWrapper.style.display = 'none';
+                hintEl.textContent = '';
+            } else if (margem < 20) {
+                hintEl.textContent = 'Nesta simulação, a margem líquida ficou abaixo de 20%. Considere aumentar preços ou reduzir custos logísticos/operacionais.';
+                hintWrapper.style.display = '';
+            } else {
+                // Entre 20% e 29% → atenção leve
+                hintEl.textContent = 'Nesta simulação, a margem líquida está abaixo do ideal. Pequenos ajustes de preço ou custos podem ajudar a chegar em 30%+.';
+                hintWrapper.style.display = '';
+            }
+        }
+    }
+
+    /**
+     * Mostra um resumo discreto do impacto entre o resultado anterior e o atual
+     * (focado em lucro após custos e margem líquida).
+     */
+    atualizarImpactoUltimaMudanca(anterior, atual) {
+        const el = document.getElementById('impactoUltimaMudanca');
+        if (!el || !atual) return;
+
+        // Sem histórico ou sem itens → não mostra nada
+        if (!anterior || atual.totalItens === 0) {
+            el.style.display = 'none';
+            el.textContent = '';
+            return;
+        }
+
+        const deltaLucro = atual.lucroTotal - (anterior.lucroTotal || 0);
+        const deltaMargem = atual.margemMedia - (anterior.margemMedia || 0);
+
+        const impactoLucroAbsoluto = Math.abs(deltaLucro);
+        const impactoMargemAbsoluto = Math.abs(deltaMargem);
+
+        // Variação muito pequena → esconde para não poluir
+        if (impactoLucroAbsoluto < 1 && impactoMargemAbsoluto < 0.2) {
+            el.style.display = 'none';
+            el.textContent = '';
+            return;
+        }
+
+        const prefixLucro = deltaLucro >= 0 ? '↑' : '↓';
+        const prefixMargem = deltaMargem >= 0 ? '↑' : '↓';
+
+        const textoLucro = `${prefixLucro} Lucro após custos ${formatarReal(Math.abs(deltaLucro))}`;
+        const textoMargem = `${prefixMargem} Margem líquida ${deltaMargem.toFixed(1).replace('.', ',')} p.p.`;
+
+        el.textContent = `Impacto das últimas mudanças: ${textoLucro} · ${textoMargem}`;
+        el.style.display = '';
     }
 
     atualizarElemento(id, valor) {
@@ -771,17 +900,7 @@ class GerenciadorVendas {
         return 'saudavel';
     }
 
-    /**
-     * Atualiza status e alertas estratégicos (margem, recomendações).
-     * O bloco é exibido apenas no Dashboard (statusContainer está dentro de #aba-dashboard).
-     * Só mostra conteúdo quando há alertas; se margem >= 30% e nada mais → não exibe nada.
-     */
     atualizarStatus(resultado) {
-        const container = document.getElementById('statusContainer');
-        const alertsEl = document.getElementById('statusAlerts');
-        if (!container || !alertsEl) return;
-        // Container está no HTML dentro da aba Dashboard → visível apenas nessa aba
-
         const alertas = [];
         const saude = this.obterSaudeMargem(resultado.margemMedia);
 
@@ -824,19 +943,23 @@ class GerenciadorVendas {
         const ordem = { critico: 0, atencao: 1, dica: 2 };
         alertas.sort((a, b) => (ordem[a.nivel] ?? 2) - (ordem[b.nivel] ?? 2));
 
-        if (alertas.length === 0) {
-            container.style.display = 'none';
-            alertsEl.innerHTML = '';
-            return;
+        const containerDashboard = document.getElementById('statusContainer');
+        const alertsDashboard = document.getElementById('statusAlerts');
+        if (containerDashboard && alertsDashboard) {
+            if (alertas.length === 0) {
+                containerDashboard.style.display = 'none';
+                alertsDashboard.innerHTML = '';
+            } else {
+                containerDashboard.style.display = '';
+                alertsDashboard.innerHTML = alertas.map(a => `
+                    <div class="avv-alerta avv-alerta-${a.nivel}" role="alert">
+                        <i class="fas ${a.icon}" aria-hidden="true"></i>
+                        <span>${a.mensagem}</span>
+                    </div>
+                `).join('');
+            }
         }
 
-        container.style.display = '';
-        alertsEl.innerHTML = alertas.map(a => `
-            <div class="avv-alerta avv-alerta-${a.nivel}" role="alert">
-                <i class="fas ${a.icon}" aria-hidden="true"></i>
-                <span>${a.mensagem}</span>
-            </div>
-        `).join('');
     }
 
     // ===== SINCRONIZAÇÃO DO SELECT COM LINHAS DA TABELA =====

@@ -234,6 +234,28 @@
                 </div>
                 <div style="margin-top:15px; padding:10px; background:var(--bg-primary); border-radius:8px;" id="dashboardPrevisaoAlerta"></div>
             </div>
+
+            <div class="config-card" style="margin-top:var(--space-lg);">
+                <h4 class="avv-card-title"><i class="fas fa-user-tie"></i> Resumo para cliente (últimos 7 dias)</h4>
+                <p id="dashboardResumoCliente" class="avv-help-text" style="margin-top:6px;"></p>
+            </div>
+
+            <div class="config-card" style="margin-top:var(--space-lg);">
+                <h4 class="avv-card-title"><i class="fas fa-road"></i> Linha do tempo da meta (4 semanas)</h4>
+                <div class="tabela-container overflow-x-auto">
+                    <table class="tabela-produtos text-sm">
+                        <thead>
+                            <tr>
+                                <th>Semana</th>
+                                <th>Lucro</th>
+                                <th>Meta</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardMetaTimeline"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         
         <!-- ===== ABA 2: VENDAS (COM BOTÃO VENDER TODOS) ===== -->
@@ -258,6 +280,23 @@
                         title="Confirma todas as vendas da lista de uma só vez">
                     <i class="fas fa-rocket"></i> Vender todos
                 </button>
+
+                <!-- Tipo de anúncio alinhado à direita da barra -->
+                <div class="avv-tipo-anuncio-row" style="margin-left:auto;">
+                    <span class="avv-tipo-anuncio-label">Tipo de anúncio</span>
+                    <div class="selector-card">
+                        <div class="selector-options">
+                            <div id="optionClassico" class="selector-option selected" onclick="selecionarAnuncio('classico')">
+                                <div class="name">Clássico</div>
+                                <div class="rate">14%</div>
+                            </div>
+                            <div id="optionPremium" class="selector-option" onclick="selecionarAnuncio('premium')">
+                                <div class="name">Premium</div>
+                                <div class="rate">19%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="tabela-container overflow-x-auto">
@@ -278,12 +317,34 @@
                 </table>
             </div>
             
-            <!-- RESUMO GERAL -->
-            <div class="section-title">
-                <i class="fas fa-chart-pie icon"></i> Resumo geral
+            <!-- RESUMO EXECUTIVO + RESUMO GERAL -->
+            <div class="section-title" style="display:flex; align-items:center; gap:10px;">
+                <span><i class="fas fa-chart-pie icon"></i> Resumo geral</span>
+                <button id="toggleResumoExecutivoBtn"
+                        type="button"
+                        class="btn-secondary"
+                        style="margin-left:auto; font-size:11px; padding:4px 10px; border-radius:999px;">
+                    Ver só o essencial
+                </button>
+            </div>
+
+            <!-- Bloco compacto: resumo executivo -->
+            <div id="resumoExecutivo" class="resumo-grid" style="margin-bottom:10px; display:none; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
+                    <div class="label"><i class="fas fa-dollar-sign"></i> Lucro após custos</div>
+                    <div class="value" id="resumoExecLucro">R$0</div>
+                </div>
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
+                    <div class="label"><i class="fas fa-percentage"></i> Margem líquida</div>
+                    <div class="value" id="resumoExecMargem">0%</div>
+                </div>
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
+                    <div class="label"><i class="fas fa-shopping-bag"></i> Faturamento</div>
+                    <div class="value" id="resumoExecFaturamento">R$0</div>
+                </div>
             </div>
             
-            <div class="resumo-grid">
+            <div class="resumo-grid" id="resumoGeralGrid">
                 <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-cube"></i> Itens</div>
                     <div class="value" id="totalItens">0</div>
@@ -310,29 +371,23 @@
                 </div>
             </div>
             
-            <!-- TIPO DE ANÚNCIO — seletor segmentado compacto -->
-            <div class="avv-tipo-anuncio-row">
-                <span class="avv-tipo-anuncio-label">Tipo de anúncio</span>
-                <div class="selector-card">
-                    <div class="selector-options">
-                        <div id="optionClassico" class="selector-option selected" onclick="selecionarAnuncio('classico')">
-                            <div class="name">Clássico</div>
-                            <div class="rate">14%</div>
-                        </div>
-                        <div id="optionPremium" class="selector-option" onclick="selecionarAnuncio('premium')">
-                            <div class="name">Premium</div>
-                            <div class="rate">19%</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <p id="resumoPagamentos"
+               class="avv-help-text"
+               style="margin-top:4px; font-size:12px; display:none;">
+            </p>
+            
+            <!-- Impacto das últimas mudanças -->
+            <p id="impactoUltimaMudanca"
+               class="avv-help-text"
+               style="margin-top:6px; font-size:12px; display:none;">
+            </p>
             
             <!-- RESULTADOS DETALHADOS (RECOLHÍVEL) -->
 <div style="margin: 20px 0;">
     <div onclick="toggleResultados()" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 15px;">
         <span id="resultadosToggleIcon" style="font-size: 20px;">▼</span>
         <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-chart-bar"></i> Resultados detalhados</span>
-        <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">clique para recolher/expandir</span>
+        <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">mostrar/ocultar detalhes</span>
     </div>
     
     <div id="resultadosPanel">
@@ -407,6 +462,9 @@
                     <span style="font-weight:600;"><i class="fas fa-dollar-sign" style="color:var(--state-success);"></i> Lucro após custos operacionais</span>
                     <span class="result-value highlight" id="lucroTotal">R$0</span>
                 </div>
+                <div class="result-item" id="vendasMargemHintWrapper" style="margin-top:6px; border-top:1px dashed var(--border-subtle); padding-top:6px; display:none;">
+                    <span style="font-size:12px; color:var(--text-secondary);" id="vendasMargemHint"></span>
+                </div>
             </div>
             <div class="result-card">
                 <h4 class="avv-card-title"><i class="fas fa-bullseye"></i> Precificação inteligente</h4>
@@ -436,6 +494,23 @@
                     <span class="result-value" id="precComparacaoConcorrencia" style="font-size:12px; color:var(--text-secondary);">Informe dados para simular.</span>
                 </div>
             </div>
+
+            <div class="result-card" title="Canal próprio = mesmo cenário de vendas, sem comissão de plataforma; demais custos permanecem iguais.">
+                <h4 class="avv-card-title"><i class="fas fa-exchange-alt"></i> Comparador de canais (simples)</h4>
+                <p class="avv-help-text">Simula vender os mesmos pedidos em um canal próprio, sem comissão de plataforma (mantendo demais custos).</p>
+                <div class="result-item">
+                    <span>Canal atual (plataforma)</span>
+                    <span class="result-value" id="canalAtualMargem">—</span>
+                </div>
+                <div class="result-item">
+                    <span>Canal próprio (simulação)</span>
+                    <span class="result-value" id="canalProprioMargem">—</span>
+                </div>
+                <div class="result-item">
+                    <span>Diferença de lucro</span>
+                    <span class="result-value" id="canalProprioDeltaLucro">—</span>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -446,7 +521,7 @@
                 <div onclick="toggleConfig()" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color);">
                     <span id="configToggleIcon" style="font-size: 20px;">▶</span>
                     <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-cog"></i> Custos de Entrega e Deslocamento</span>
-                    <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">clique para expandir</span>
+                    <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">mostrar/ocultar detalhes</span>
                 </div>
                 <p class="avv-help-text" style="margin-top:6px;">Configure aqui os custos que impactam cada ida: rota, combustível, km rodado, tempo de deslocamento, pedágio e estacionamento.</p>
                 <div id="configPanel" style="display: none; margin-top: 15px;">
@@ -501,6 +576,7 @@
                                 <span class="currency">R$</span>
                                 <input type="number" id="custoKmVeiculo" value="0.00" step="0.01">
                             </div>
+                            <p class="avv-help-text" style="margin-top:4px;">Inclui manutenção, depreciação, seguro e outros custos do veículo por km rodado.</p>
                         </div>
                         <div class="input-card">
                             <label><i class="fas fa-parking"></i> Estacionamento por viagem (R$)</label>
@@ -522,6 +598,7 @@
                                 <span class="currency">R$</span>
                                 <input type="number" id="valorHoraVendedor" value="0.00" step="0.01">
                             </div>
+                            <p class="avv-help-text" style="margin-top:4px;">Tempo de trabalho direto por ida (atendimento, separação, entrega). Diferente do pró-labore mensal.</p>
                         </div>
                         <div class="input-card">
                             <label><i class="fas fa-clock"></i> Tempo médio por km (min)</label>
@@ -546,7 +623,7 @@
                 <div onclick="toggleCustosAvancados()" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color);">
                     <span id="custosToggleIcon" style="font-size: 20px;">▶</span>
                     <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-donate"></i> Custos Fixos e Estruturais</span>
-                    <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">clique para expandir</span>
+                    <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">mostrar/ocultar detalhes</span>
                 </div>
                 <p class="avv-help-text" style="margin-top:6px;">Custos mensais do negócio (fixos, pró-labore, impostos, perdas, marketing, taxas) rateados entre as vendas.</p>
                 <div id="custosPanel" style="display: none; margin-top: 15px;">
@@ -563,6 +640,7 @@
                             <div class="input-wrapper">
                                 <input type="number" id="vendasMensaisEsperadas" value="50" step="1" min="1">
                             </div>
+                            <p class="avv-help-text" style="margin-top:4px;">Usado para dividir os custos fixos por venda. Não precisa ser exato; é uma estimativa de volume médio.</p>
                         </div>
                         <div class="input-card">
                             <label><i class="fas fa-user-tie"></i> Pró-labore mensal (R$)</label>
@@ -598,6 +676,7 @@
                                 <input type="number" id="taxaPagamentoPercentual" value="4.99" step="0.01" min="0" max="100">
                                 <span class="currency">%</span>
                             </div>
+                            <p class="avv-help-text" style="margin-top:4px;">Aplicada apenas sobre as vendas pagas no cartão. Pix e boleto não sofrem essa taxa.</p>
                         </div>
                     </div>
                 </div>
