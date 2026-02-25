@@ -6,10 +6,28 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="theme-color" content="#0071e3">
-    <title>AVV • Sistema Inteligente</title>
+    <meta name="theme-color" content="#0E1116">
+    <title>AVV • Copiloto de margem</title>
     
-    <!-- CSS Externo -->
+    <!-- Tailwind CSS (base TailAdmin) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Fontes: Outfit (geral), Inter (tema Light) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+
+    <!-- CSS Externo AVV -->
     <link rel="stylesheet" href="style.css">
     
     <!-- Font Awesome para ícones profissionais -->
@@ -32,94 +50,89 @@
         };
     </script>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📊 <span>AVV</span> • Sistema Inteligente</h1>
-            <p style="font-size: 12px; margin-top: 5px;">
-                <span id="temaIndicator">💎 Premium</span> • Dashboard • Vendas • Estoque • Histórico • Cenários • Configurações • Marketplace
-            </p>
-        </div>
-        
-        <!-- ===== SISTEMA DE ABAS COM ÍCONES FONT AWESOME ===== -->
-        <div class="tabs">
-            <div class="tab active" onclick="mudarAba('dashboard')">
-                <i class="fas fa-chart-line"></i> Dashboard
+<body class="tailadmin-layout">
+    <!-- Layout: sidebar + área de conteúdo -->
+    <div class="avv-app-layout flex min-h-screen">
+        <!-- Sidebar esquerda (menu principal) -->
+        <aside class="avv-sidebar hidden w-64 px-4 py-6 md:flex md:flex-col" style="border-right: 1px solid var(--border-color);">
+            <div class="mb-6 flex items-center gap-2">
+                <span class="text-xl font-semibold" style="color: var(--text-primary);">AVV</span>
+                <span class="text-sm" style="color: var(--text-muted);">Copiloto de margem</span>
             </div>
-            <div class="tab" onclick="mudarAba('vendas')">
-                <i class="fas fa-shopping-cart"></i> Vendas
-            </div>
-            <div class="tab" onclick="mudarAba('estoque')">
-                <i class="fas fa-boxes"></i> Estoque
-            </div>
-            <div class="tab" onclick="mudarAba('historico')">
-                <i class="fas fa-history"></i> Histórico
-            </div>
-            <div class="tab" onclick="mudarAba('cenarios')">
-                <i class="fas fa-chart-pie"></i> Cenários
-            </div>
-            <div class="tab" onclick="mudarAba('config')">
-                <i class="fas fa-cog"></i> Configurações
-            </div>
-        </div>
+            <nav class="flex-1 space-y-1">
+                <a id="nav-dashboard" href="javascript:void(0)" onclick="mudarAba('dashboard')" class="avv-nav-item avv-nav-active">
+                    <i class="fas fa-chart-line w-5 text-center"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a id="nav-vendas" href="javascript:void(0)" onclick="mudarAba('vendas')" class="avv-nav-item">
+                    <i class="fas fa-shopping-cart w-5 text-center"></i>
+                    <span>Vendas</span>
+                </a>
+                <a id="nav-estoque" href="javascript:void(0)" onclick="mudarAba('estoque')" class="avv-nav-item">
+                    <i class="fas fa-boxes w-5 text-center"></i>
+                    <span>Estoque</span>
+                </a>
+                <a id="nav-historico" href="javascript:void(0)" onclick="mudarAba('historico')" class="avv-nav-item">
+                    <i class="fas fa-history w-5 text-center"></i>
+                    <span>Histórico</span>
+                </a>
+                <a id="nav-cenarios" href="javascript:void(0)" onclick="mudarAba('cenarios')" class="avv-nav-item">
+                    <i class="fas fa-chart-pie w-5 text-center"></i>
+                    <span>Cenários</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Coluna principal: header + conteúdo -->
+        <div class="flex flex-1 flex-col overflow-hidden">
+            <!-- Header superior -->
+            <header class="avv-header-bar flex items-center justify-between border-b px-4 py-3">
+                <h1 class="text-lg font-semibold avv-header-title">AVV</h1>
+                <div class="flex items-center gap-2">
+                    <span id="temaIndicator" class="text-xs avv-header-muted">Dark</span>
+                    <button type="button" class="avv-header-settings" id="avv-btn-settings" title="Configurações" aria-label="Configurações">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Conteúdo principal: largura útil 1400–1500px, padding lateral moderado -->
+            <main class="flex-1 overflow-y-auto">
+                <div class="avv-main-content mx-auto w-full max-w-[1500px] px-4 py-5 sm:px-5 md:px-6 lg:px-8">
         
         <!-- ===== ABA 1: DASHBOARD ===== -->
         <div id="aba-dashboard" class="tab-content active">
             <div class="section-title">
-                <i class="fas fa-chart-line icon"></i> DASHBOARD
+                <i class="fas fa-chart-line icon"></i> Dashboard
             </div>
             
-            <!-- CARD DA META (LINHA INTEIRA) -->
-            <div style="margin-bottom: 30px;">
-                <div class="config-card" style="background: linear-gradient(135deg, var(--primary-color) 0%, color-mix(in srgb, var(--primary-color) 70%, white 30%) 100%); border: none; opacity: 0.95;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; color: white; margin-bottom: 20px;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 32px;">🎯</span>
-                            <div>
-                                <div style="font-size: 18px; font-weight: 600;">META SEMANAL 2</div>
-                                <div style="font-size: 12px; opacity: 0.8;">clique no valor para editar</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- VALOR DA META (EDITÁVEL) -->
-                    <div style="text-align: center; margin-bottom: 25px;">
-                        <div style="font-size: 14px; color: rgba(255,255,255,0.8); margin-bottom: 5px;">Valor da meta</div>
-                        <input type="number" id="dashboardMetaValor" value="1000" step="100" min="0"
-                               style="font-size: 48px; font-weight: 700; width: 250px; text-align: center; 
-                                      background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.5); 
-                                      color: white; border-radius: 15px; padding: 15px;
-                                      outline: none; margin: 0 auto; display: block;"
-                               onchange="atualizarMetaValor(this.value)">
-                    </div>
-                    
-                    <!-- BARRA DE PROGRESSO -->
-                    <div style="margin: 20px 0 15px;">
-                        <div style="display: flex; justify-content: space-between; color: white; margin-bottom: 10px;">
-                            <span>Progresso</span>
-                            <span id="dashboardMetaProgresso" style="font-weight: 600;">0%</span>
-                        </div>
-                        <div style="height: 30px; background: rgba(255,255,255,0.2); border-radius: 15px; overflow: hidden;">
-                            <div id="dashboardMetaBar" style="height: 100%; width: 0%; background: white; border-radius: 15px; transition: width 0.3s;"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- STATUS ATUAL -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; color: white; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+            <!-- CARD DA META (minimalista, barra moderna) -->
+            <div class="avv-meta-card" style="margin-bottom: var(--space-lg);">
+                <div class="avv-meta-header">
+                    <div class="avv-meta-header-left">
+                        <span class="avv-meta-icon">🎯</span>
                         <div>
-                            <span style="font-size: 14px; opacity: 0.9;"><i class="fas fa-dollar-sign"></i> Lucro atual:</span>
-                            <span style="font-size: 22px; font-weight: 700; margin-left: 10px;" id="dashboardLucroAtual">R$ 0,00</span>
-                        </div>
-                        <div>
-                            <span style="font-size: 14px; opacity: 0.9;"><i class="fas fa-hourglass-half"></i> Faltam:</span>
-                            <span style="font-size: 22px; font-weight: 700; margin-left: 10px;" id="dashboardFaltaMeta">R$ 1.000,00</span>
+                            <div class="avv-meta-title">Meta semanal</div>
+                            <div class="avv-meta-subtitle">Clique no valor para editar</div>
                         </div>
                     </div>
+                    <span id="dashboardMetaProgresso" class="avv-meta-percentage">0%</span>
+                </div>
+                <div class="avv-meta-input-wrapper">
+                    <input type="number" id="dashboardMetaValor" value="1000" step="100" min="0" class="avv-meta-valor-input"
+                           onchange="atualizarMetaValor(this.value)">
+                </div>
+                <div class="avv-meta-bar-wrap">
+                    <div id="dashboardMetaBar" class="avv-meta-bar-fill" style="width: 0%;"></div>
+                </div>
+                <div class="avv-meta-footer">
+                    <div><span class="avv-meta-footer-label">Lucro atual </span><strong id="dashboardLucroAtual" class="avv-meta-footer-value">R$ 0,00</strong></div>
+                    <div><span class="avv-meta-footer-label">Faltam </span><strong id="dashboardFaltaMeta" class="avv-meta-footer-value">R$ 1.000,00</strong></div>
                 </div>
             </div>
             
-            <!-- CARDS PRINCIPAIS (4 cards lado a lado) -->
-            <div class="dashboard-grid" style="margin-top: 20px;">
+            <!-- CARDS PRINCIPAIS (4 cards compactos) -->
+            <div class="dashboard-grid">
                 <div class="dashboard-card">
                     <div class="icon"><i class="fas fa-shopping-bag"></i></div>
                     <div class="value" id="dashboardVendasHoje">0</div>
@@ -148,17 +161,17 @@
             
             <!-- RESTO DO DASHBOARD -->
             <div class="grafico-container">
-                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-chart-bar"></i> COMPARATIVO SEMANAL</h4>
-                <div class="dashboard-comparativo-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-                    <div style="background:var(--bg-primary); padding:20px; border-radius:10px;">
-                        <div style="font-size:14px; color:var(--text-secondary);">Semana Atual</div>
-                        <div style="font-size:32px; font-weight:700; color:var(--primary-color);" id="dashboardSemanaAtualItens">0</div>
+                <h4 class="avv-card-title"><i class="fas fa-chart-bar"></i> Comparativo semanal</h4>
+                <div class="dashboard-comparativo-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md);">
+                    <div style="background:var(--bg-secondary); padding:var(--space-lg); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                        <div style="font-size:12px; color:var(--text-muted);">Semana atual</div>
+                        <div style="font-size:28px; font-weight:700; color:var(--text-primary);" id="dashboardSemanaAtualItens">0</div>
                         <div style="font-size:14px;">itens vendidos</div>
                         <div style="font-size:20px; margin-top:10px;" id="dashboardSemanaAtualLucro">R$0</div>
                     </div>
-                    <div style="background:var(--bg-primary); padding:20px; border-radius:10px;">
-                        <div style="font-size:14px; color:var(--text-secondary);">Semana Passada</div>
-                        <div style="font-size:32px; font-weight:700; color:#6c757d;" id="dashboardSemanaPassadaItens">0</div>
+                    <div style="background:var(--bg-secondary); padding:var(--space-lg); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                        <div style="font-size:12px; color:var(--text-muted);">Semana passada</div>
+                        <div style="font-size:28px; font-weight:700; color:var(--text-secondary);" id="dashboardSemanaPassadaItens">0</div>
                         <div style="font-size:14px;">itens vendidos</div>
                         <div style="font-size:20px; margin-top:10px;" id="dashboardSemanaPassadaLucro">R$0</div>
                     </div>
@@ -167,23 +180,23 @@
             </div>
             
             <div class="grafico-container">
-                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-fire"></i> TOP 5 PRODUTOS (7 DIAS)</h4>
+                <h4 class="avv-card-title"><i class="fas fa-fire"></i> Top 5 produtos (7 dias)</h4>
                 <div id="dashboardTopProdutos"></div>
             </div>
             
             <div class="grafico-container">
-                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-chart-line"></i> FATURAMENTO DIARIO (7 DIAS)</h4>
+                <h4 class="avv-card-title"><i class="fas fa-chart-line"></i> Faturamento diário (7 dias)</h4>
                 <div id="graficoFaturamentoDiario"></div>
             </div>
             
             <div class="grafico-container">
-                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-chart-bar"></i> MARGEM DIARIA (7 DIAS)</h4>
+                <h4 class="avv-card-title"><i class="fas fa-chart-bar"></i> Margem diária (7 dias)</h4>
                 <div id="graficoMargemDiaria"></div>
             </div>
             
-            <div class="dashboard-comparativo-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="dashboard-comparativo-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md);">
                 <div class="config-card">
-                    <h4 style="color:var(--primary-color); margin-bottom:15px;"><i class="fas fa-exclamation-triangle"></i> ALERTAS</h4>
+                    <h4 class="avv-card-title"><i class="fas fa-exclamation-triangle"></i> Alertas</h4>
                     <div id="dashboardAlertas"></div>
                     <div style="margin-top:15px; display:flex; gap:10px;">
                         <button class="btn-primary" onclick="mudarAba('estoque')"><i class="fas fa-boxes"></i> Ver Estoque</button>
@@ -192,14 +205,19 @@
                 </div>
                 
                 <div class="config-card">
-                    <h4 style="color:var(--primary-color); margin-bottom:15px;"><i class="fas fa-clock"></i> ÚLTIMAS VENDAS</h4>
+                    <h4 class="avv-card-title"><i class="fas fa-clock"></i> Últimas vendas</h4>
                     <div class="timeline" id="dashboardTimeline"></div>
                     <button class="btn-primary" style="margin-top:15px; width:100%;" onclick="mudarAba('historico')"><i class="fas fa-history"></i> Ver Histórico Completo</button>
                 </div>
             </div>
             
-            <div class="config-card" style="margin-top:20px;">
-                <h4 style="color:var(--primary-color); margin-bottom:15px;"><i class="fas fa-chart-line"></i> PREVISÃO PRÓXIMA SEMANA</h4>
+            <!-- Status e alertas estratégicos (margem, recomendações): apenas no Dashboard -->
+            <div id="statusContainer" class="avv-status-container" style="display: none;">
+                <div id="statusAlerts" class="avv-status-alerts"></div>
+            </div>
+            
+            <div class="config-card" style="margin-top:var(--space-lg);">
+                <h4 class="avv-card-title"><i class="fas fa-chart-line"></i> Previsão próxima semana</h4>
                 <div class="dashboard-previsao-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px;">
                     <div>
                         <div style="font-size:14px; color:var(--text-secondary);">Itens</div>
@@ -223,8 +241,8 @@
             
             <!-- PRODUTOS DA SEMANA -->
             <div class="section-title">
-                <i class="fas fa-clipboard-list icon"></i> PRODUTOS
-                <span style="font-size:14px; color:var(--primary-color);">⬅️ Clique em "Vender" para confirmar a venda da linha</span>
+                <i class="fas fa-clipboard-list icon"></i> Produtos
+                <span style="font-size:12px; color:var(--text-muted); font-weight:400;">Clique em &quot;Vender&quot; para confirmar a venda da linha</span>
             </div>
             
             <div class="btn-group">
@@ -237,14 +255,13 @@
                     <i class="fas fa-trash-alt"></i> Limpar Tudo
                 </button>
                 <button class="btn-success" onclick="vendas.confirmarTodasVendas()"
-                        title="Confirma todas as vendas da lista de uma só vez"
-                        style="background: linear-gradient(135deg, #17a2b8, #0d6efd);">
-                    <i class="fas fa-rocket"></i> Vender Todos
+                        title="Confirma todas as vendas da lista de uma só vez">
+                    <i class="fas fa-rocket"></i> Vender todos
                 </button>
             </div>
             
-            <div class="tabela-container">
-                <table class="tabela-produtos">
+            <div class="tabela-container overflow-x-auto">
+                <table class="tabela-produtos w-full text-sm text-left">
                     <thead>
                         <tr>
                             <th><i class="fas fa-user"></i> Cliente</th>
@@ -253,6 +270,7 @@
                             <th><i class="fas fa-weight"></i> Peso(g)</th>
                             <th><i class="fas fa-sort-numeric-up"></i> Qtd</th>
                             <th><i class="fas fa-dollar-sign"></i> Custo</th>
+                            <th><i class="fas fa-credit-card"></i> Pagamento</th>
                             <th><i class="fas fa-cog"></i> Ações</th>
                         </tr>
                     </thead>
@@ -262,50 +280,49 @@
             
             <!-- RESUMO GERAL -->
             <div class="section-title">
-                <i class="fas fa-chart-pie icon"></i> RESUMO GERAL
+                <i class="fas fa-chart-pie icon"></i> Resumo geral
             </div>
             
             <div class="resumo-grid">
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-cube"></i> Itens</div>
                     <div class="value" id="totalItens">0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-shopping-bag"></i> Pedidos</div>
                     <div class="value" id="totalPedidos">0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-ticket-alt"></i> Ticket Médio</div>
                     <div class="value" id="ticketMedio">R$0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-chart-line"></i> Itens/Pedido</div>
                     <div class="value" id="itensPorPedido">0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-weight"></i> Peso Total</div>
                     <div class="value" id="pesoTotal">0kg</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-truck"></i> Viagens</div>
                     <div class="value" id="totalViagens">0</div>
                 </div>
             </div>
             
-            <!-- TIPO DE ANÚNCIO -->
-            <div class="section-title">
-                <i class="fas fa-tag icon"></i> TIPO DE ANÚNCIO
-            </div>
-            
-            <div class="selector-card">
-                <div class="selector-options">
-                    <div id="optionClassico" class="selector-option selected" onclick="selecionarAnuncio('classico')">
-                        <div class="name"><i class="fas fa-star"></i> Clássico</div>
-                        <div class="rate">14%</div>
-                    </div>
-                    <div id="optionPremium" class="selector-option" onclick="selecionarAnuncio('premium')">
-                        <div class="name"><i class="fas fa-crown"></i> Premium</div>
-                        <div class="rate">19%</div>
+            <!-- TIPO DE ANÚNCIO — seletor segmentado compacto -->
+            <div class="avv-tipo-anuncio-row">
+                <span class="avv-tipo-anuncio-label">Tipo de anúncio</span>
+                <div class="selector-card">
+                    <div class="selector-options">
+                        <div id="optionClassico" class="selector-option selected" onclick="selecionarAnuncio('classico')">
+                            <div class="name">Clássico</div>
+                            <div class="rate">14%</div>
+                        </div>
+                        <div id="optionPremium" class="selector-option" onclick="selecionarAnuncio('premium')">
+                            <div class="name">Premium</div>
+                            <div class="rate">19%</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -314,14 +331,14 @@
 <div style="margin: 20px 0;">
     <div onclick="toggleResultados()" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 15px;">
         <span id="resultadosToggleIcon" style="font-size: 20px;">▼</span>
-        <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-chart-bar"></i> RESULTADOS DETALHADOS</span>
+        <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-chart-bar"></i> Resultados detalhados</span>
         <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">clique para recolher/expandir</span>
     </div>
     
     <div id="resultadosPanel">
-        <div class="resultados-container">
+            <div class="resultados-container">
             <div class="result-card">
-                <h4><i class="fas fa-calculator"></i> MÉDIAS POR PRODUTO</h4>
+                <h4 class="avv-card-title"><i class="fas fa-calculator"></i> Médias por produto</h4>
                 <div class="result-item">
                     <span>Preço médio</span>
                     <span class="result-value" id="precoMedio">R$0</span>
@@ -331,7 +348,7 @@
                     <span class="result-value" id="custoMedio">R$0</span>
                 </div>
                 <div class="result-item">
-                    <span>Comissão média</span>
+                    <span>Comissão plataforma média</span>
                     <span class="result-value" id="comissaoMedia">R$0</span>
                 </div>
                 <div class="result-item">
@@ -353,7 +370,7 @@
             </div>
             
             <div class="result-card">
-                <h4><i class="fas fa-chart-line"></i> TOTAIS DA SEMANA</h4>
+                <h4 class="avv-card-title"><i class="fas fa-chart-line"></i> Totais da semana</h4>
                 <div class="result-item">
                     <span>Faturamento</span>
                     <span class="result-value" id="faturamentoTotal">R$0</span>
@@ -363,7 +380,7 @@
                     <span class="result-value" id="custoTotalProdutos">R$0</span>
                 </div>
                 <div class="result-item">
-                    <span>Comissão total</span>
+                    <span>Comissão plataforma total</span>
                     <span class="result-value" id="comissaoTotal">R$0</span>
                 </div>
                 <div class="result-item">
@@ -378,9 +395,45 @@
                     <span>Deslocamento total</span>
                     <span class="result-value" id="deslocamentoTotal">R$0</span>
                 </div>
-                <div class="result-item" style="border-top:2px solid var(--primary-color);">
-                    <span style="font-size:18px;"><i class="fas fa-dollar-sign" style="color:green;"></i> LUCRO TOTAL</span>
+                <div class="result-item">
+                    <span>Custos operacionais</span>
+                    <span class="result-value" id="custosOperacionaisTotal">R$0</span>
+                </div>
+                <div class="result-item">
+                    <span>Lucro antes dos custos operacionais</span>
+                    <span class="result-value" id="lucroAntesCustosOp">R$0</span>
+                </div>
+                <div class="result-item" style="border-top:1px solid var(--border-color); padding-top:10px; margin-top:4px;">
+                    <span style="font-weight:600;"><i class="fas fa-dollar-sign" style="color:var(--state-success);"></i> Lucro após custos operacionais</span>
                     <span class="result-value highlight" id="lucroTotal">R$0</span>
+                </div>
+            </div>
+            <div class="result-card">
+                <h4 class="avv-card-title"><i class="fas fa-bullseye"></i> Precificação inteligente</h4>
+                <p class="avv-help-text">Com base no custo total real (incluindo logística e custos operacionais), o AVV sugere um preço alinhado à margem desejada e compara com a concorrência.</p>
+                <div class="result-item">
+                    <span>Margem desejada</span>
+                    <span class="result-value">
+                        <input type="number" id="precMargemDesejada" value="30" step="0.5" min="0" max="95" class="avv-input" style="max-width:100px;">
+                    </span>
+                </div>
+                <div class="result-item">
+                    <span>Preço da concorrência</span>
+                    <span class="result-value">
+                        <input type="number" id="precPrecoConcorrencia" value="" step="0.01" min="0" class="avv-input" style="max-width:120px;" placeholder="R$">
+                    </span>
+                </div>
+                <div class="result-item">
+                    <span>Preço sugerido</span>
+                    <span class="result-value" id="precPrecoSugerido">—</span>
+                </div>
+                <div class="result-item">
+                    <span>Margem estimada</span>
+                    <span class="result-value" id="precMargemResult">—</span>
+                </div>
+                <div class="result-item">
+                    <span>Comparação concorrência</span>
+                    <span class="result-value" id="precComparacaoConcorrencia" style="font-size:12px; color:var(--text-secondary);">Informe dados para simular.</span>
                 </div>
             </div>
         </div>
@@ -388,14 +441,14 @@
 </div>
 
                     
-            <!-- CONFIGURAÇÕES AVANÇADAS (RECOLHÍVEL) -->
+            <!-- CUSTOS DE ENTREGA E DESLOCAMENTO (RECOLHÍVEL) -->
             <div style="margin: 20px 0;">
                 <div onclick="toggleConfig()" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color);">
                     <span id="configToggleIcon" style="font-size: 20px;">▶</span>
-                    <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-cog"></i> CONFIGURAÇÕES AVANÇADAS</span>
+                    <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-cog"></i> Custos de Entrega e Deslocamento</span>
                     <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">clique para expandir</span>
                 </div>
-                
+                <p class="avv-help-text" style="margin-top:6px;">Configure aqui os custos que impactam cada ida: rota, combustível, km rodado, tempo de deslocamento, pedágio e estacionamento.</p>
                 <div id="configPanel" style="display: none; margin-top: 15px;">
                     <div class="input-grid" style="margin-bottom: 0;">
                         <div class="input-card">
@@ -443,6 +496,41 @@
                             </div>
                         </div>
                         <div class="input-card">
+                            <label><i class="fas fa-car-side"></i> Custo por km do veículo (R$)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="custoKmVeiculo" value="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-parking"></i> Estacionamento por viagem (R$)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="custoEstacionamento" value="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-road"></i> Pedágio por viagem (R$)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="custoPedagio" value="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-user-clock"></i> Valor da hora do vendedor (R$)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="valorHoraVendedor" value="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-clock"></i> Tempo médio por km (min)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="tempoMedioPorKm" value="1" step="0.1" min="0">
+                                <span class="currency">min</span>
+                            </div>
+                        </div>
+                        <div class="input-card">
                             <label><i class="fas fa-calculator"></i> Custo por ida</label>
                             <div class="input-wrapper" style="background:var(--bg-secondary);">
                                 <span class="currency">R$</span>
@@ -452,21 +540,74 @@
                     </div>
                 </div>
             </div>
+
+            <!-- CUSTOS FIXOS E ESTRUTURAIS (RECOLHÍVEL) -->
+            <div style="margin: 20px 0;">
+                <div onclick="toggleCustosAvancados()" style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 15px; background: var(--bg-secondary); border-radius: 10px; border: 1px solid var(--border-color);">
+                    <span id="custosToggleIcon" style="font-size: 20px;">▶</span>
+                    <span style="font-weight: 600; color: var(--text-primary);"><i class="fas fa-donate"></i> Custos Fixos e Estruturais</span>
+                    <span style="font-size: 12px; color: var(--text-secondary); margin-left: auto;">clique para expandir</span>
+                </div>
+                <p class="avv-help-text" style="margin-top:6px;">Custos mensais do negócio (fixos, pró-labore, impostos, perdas, marketing, taxas) rateados entre as vendas.</p>
+                <div id="custosPanel" style="display: none; margin-top: 15px;">
+                    <div class="input-grid" style="margin-bottom: 0;">
+                        <div class="input-card">
+                            <label><i class="fas fa-building"></i> Custo fixo mensal (R$)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="custoFixoMensal" value="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-shopping-cart"></i> Vendas mensais esperadas</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="vendasMensaisEsperadas" value="50" step="1" min="1">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-user-tie"></i> Pró-labore mensal (R$)</label>
+                            <div class="input-wrapper">
+                                <span class="currency">R$</span>
+                                <input type="number" id="proLaboreMensal" value="0.00" step="0.01">
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-file-invoice-dollar"></i> Imposto sobre faturamento (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="impostoPercentual" value="6.00" step="0.01" min="0" max="100">
+                                <span class="currency">%</span>
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-undo-alt"></i> Perdas estimadas (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="perdasPercentual" value="1.00" step="0.01" min="0" max="100">
+                                <span class="currency">%</span>
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-bullhorn"></i> Marketing (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="marketingPercentual" value="2.00" step="0.01" min="0" max="100">
+                                <span class="currency">%</span>
+                            </div>
+                        </div>
+                        <div class="input-card">
+                            <label><i class="fas fa-credit-card"></i> Taxa de pagamento cartão (%)</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="taxaPagamentoPercentual" value="4.99" step="0.01" min="0" max="100">
+                                <span class="currency">%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <!-- STATUS (TAMBÉM CENTRALIZADO) -->
-<div id="statusCard" class="status-card status-bom" style="text-align: center;">
-    <i class="fas fa-chart-line"></i> ANÁLISE
-</div>
-         <!-- STATUS -->
-<!-- RECOMENDAÇÃO (AGORA CENTRALIZADA) -->
-<div id="recomendacao" style="background:var(--bg-secondary); padding:15px; border-radius:8px; margin:20px 0; color:var(--text-primary); text-align: center;">
-    <!-- O conteúdo será inserido pelo JavaScript -->
-</div>
 
         <!-- ===== ABA 3: ESTOQUE ===== -->
         <div id="aba-estoque" class="tab-content">
             <div class="section-title">
-                <i class="fas fa-boxes icon"></i> PRODUTOS EM ESTOQUE
+                <i class="fas fa-boxes icon"></i> Produtos em estoque
             </div>
             
             <div class="btn-group">
@@ -476,7 +617,7 @@
                 </button>
             </div>
             
-            <div class="tabela-container">
+            <div class="tabela-container overflow-x-auto">
                 <table>
                     <thead>
                         <tr>
@@ -489,37 +630,27 @@
                         </tr>
                     </thead>
                     <tbody id="estoqueBody"></tbody>
-                    <tfoot id="estoqueTotais">
-                        <tr style="background: var(--bg-secondary); font-weight: 700; border-top: 2px solid var(--primary-color);">
-                            <td><i class="fas fa-cubes"></i> Total</td>
-                            <td id="estoqueTotalQtd">0</td>
-                            <td id="estoqueTotalCusto">R$ 0,00</td>
-                            <td id="estoqueTotalPeso">0 g</td>
-                            <td id="estoqueTotalPreco">R$ 0,00</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
             
             <div class="resumo-grid" style="margin-top: 16px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));">
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-box"></i> Produtos</div>
                     <div class="value" id="estoqueResumoProdutos">0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-sort-numeric-up"></i> Quantidade</div>
                     <div class="value" id="estoqueResumoQuantidade">0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-dollar-sign"></i> Custo total</div>
                     <div class="value" id="estoqueResumoCusto">R$ 0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-weight"></i> Peso total</div>
                     <div class="value" id="estoqueResumoPeso">0 kg</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-tag"></i> Valor (preço)</div>
                     <div class="value" id="estoqueResumoPreco">R$ 0</div>
                 </div>
@@ -531,23 +662,23 @@
         <!-- ===== ABA 4: HISTÓRICO ===== -->
         <div id="aba-historico" class="tab-content">
             <div class="section-title">
-                <i class="fas fa-history icon"></i> HISTORICO DE VENDAS
+                <i class="fas fa-history icon"></i> Histórico de vendas
             </div>
             
-            <div class="config-card" style="margin-bottom:20px;">
-                <h4 style="color:var(--primary-color); margin-bottom:15px;"><i class="fas fa-filter"></i> Filtros Avancados</h4>
-                <div class="historico-filtros-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+            <div class="config-card" style="margin-bottom:var(--space-lg);">
+                <h4 class="avv-card-title"><i class="fas fa-filter"></i> Filtros</h4>
+                <div class="historico-filtros-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:var(--space-md);">
                     <div>
-                        <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:5px;">Buscar por cliente ou produto:</label>
-                        <input type="text" id="historicoSearchInput" placeholder="Digite aqui..." style="width:100%; padding:8px; border:2px solid var(--primary-color); border-radius:8px; font-size:14px;">
+                        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">Buscar</label>
+                        <input type="text" id="historicoSearchInput" placeholder="Cliente ou produto..." class="avv-input">
                     </div>
                     <div>
-                        <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:5px;">Data Inicial:</label>
-                        <input type="date" id="historicoDataInicio" style="width:100%; padding:8px; border:2px solid var(--primary-color); border-radius:8px; font-size:14px;">
+                        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">Data inicial</label>
+                        <input type="date" id="historicoDataInicio" class="avv-input">
                     </div>
                     <div>
-                        <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:5px;">Data Final:</label>
-                        <input type="date" id="historicoDataFim" style="width:100%; padding:8px; border:2px solid var(--primary-color); border-radius:8px; font-size:14px;">
+                        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:6px;">Data final</label>
+                        <input type="date" id="historicoDataFim" class="avv-input">
                     </div>
                 </div>
             </div>
@@ -561,15 +692,15 @@
             </div>
             
             <div class="grafico-container">
-                <h4 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-chart-bar"></i> PRODUTOS MAIS VENDIDOS</h4>
+                <h4 class="avv-card-title"><i class="fas fa-chart-bar"></i> Produtos mais vendidos</h4>
                 <div id="graficoMaisVendidos"></div>
             </div>
             
-            <div class="tabela-container">
+            <div class="tabela-container overflow-x-auto">
                 <table>
                     <thead>
                         <tr>
-                            <th><i class="fas fa-clock"></i> Data/Hora</th>
+                            <th><i class="fas fa-clock"></i> Data / Hora</th>
                             <th><i class="fas fa-user"></i> Cliente</th>
                             <th><i class="fas fa-box"></i> Produto</th>
                             <th><i class="fas fa-sort-numeric-up"></i> Qtd</th>
@@ -584,23 +715,23 @@
             </div>
             
             <div class="resumo-grid" style="grid-template-columns:repeat(5,1fr);">
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-shopping-bag"></i> Vendas</div>
                     <div class="value" id="totalVendasHist">0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-cube"></i> Itens</div>
                     <div class="value" id="totalItensHist">0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-dollar-sign"></i> Faturamento</div>
                     <div class="value" id="faturamentoHist">R$0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-dollar-sign"></i> Lucro</div>
                     <div class="value" id="lucroHist">R$0</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="label"><i class="fas fa-percent"></i> Margem</div>
                     <div class="value" id="margemHist">0%</div>
                 </div>
@@ -610,23 +741,23 @@
         <!-- ===== ABA 5: CENÁRIOS ===== -->
         <div id="aba-cenarios" class="tab-content">
             <div class="section-title">
-                <i class="fas fa-chart-line icon"></i> CENÁRIOS E PREVISÕES
+                <i class="fas fa-chart-line icon"></i> Cenários e previsões
             </div>
             
             <div class="resumo-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:30px;">
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="value" id="basePreco">R$0</div>
                     <div class="label"><i class="fas fa-dollar-sign"></i> Preço médio</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="value" id="baseCusto">R$0</div>
                     <div class="label"><i class="fas fa-dollar-sign"></i> Custo médio</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="value" id="baseLucro">R$0</div>
                     <div class="label"><i class="fas fa-dollar-sign"></i> Lucro médio</div>
                 </div>
-                <div class="resumo-card">
+                <div class="resumo-card rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
                     <div class="value" id="baseMargem">0%</div>
                     <div class="label"><i class="fas fa-percent"></i> Margem atual</div>
                 </div>
@@ -683,9 +814,27 @@
                     </div>
                 </div>
             </div>
+
+            <div class="section-title" style="margin-top:30px;">
+                <i class="fas fa-project-diagram icon"></i> Cenários salvos
+            </div>
+            <div class="config-card" style="margin-bottom:var(--space-md);">
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="text" id="cenarioNome" class="avv-input" placeholder="Nome do cenário (ex: Black Friday agressivo)">
+                    <button class="btn-primary" type="button" onclick="salvarCenarioAtual()"><i class="fas fa-save"></i> Salvar cenário atual</button>
+                </div>
+            </div>
+            <div id="cenariosSalvosContainer" class="cenarios-salvos-grid"></div>
+
+            <div class="section-title" style="margin-top:30px;">
+                <i class="fas fa-balance-scale icon"></i> Comparação de cenários
+            </div>
+            <div class="config-card" id="cenariosComparacaoContainer">
+                <p style="font-size:12px; color:var(--text-secondary);">Selecione um cenário salvo e clique em &quot;Comparar&quot; para ver lado a lado com o cenário atual.</p>
+            </div>
             
             <div class="section-title">
-                <i class="fas fa-robot icon"></i> PREVISÃO INTELIGENTE
+                <i class="fas fa-robot icon"></i> Previsão inteligente
             </div>
             
             <div class="config-card">
@@ -693,164 +842,160 @@
             </div>
             
             <div class="section-title">
-                <i class="fas fa-lightbulb icon"></i> DICAS PERSONALIZADAS
+                <i class="fas fa-lightbulb icon"></i> Dicas personalizadas
             </div>
             
             <div class="dicas-container" id="dicasContainer"></div>
         </div>
         
-        <!-- ===== ABA 6: CONFIGURAÇÕES ===== -->
-        <div id="aba-config" class="tab-content">
-            <div class="section-title">
-                <i class="fas fa-cog icon"></i> CONFIGURAÇÕES DO SISTEMA
-            </div>
-            
-            <!-- TEMA -->
-            <div class="config-card">
-                <h3 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-palette"></i> TEMA</h3>
-                
-                <div class="config-item">
-                    <div class="config-label">
-                        <span>🌓 Modo:</span>
-                    </div>
-                    <div class="config-toggle" style="flex-wrap: wrap; gap: 5px;">
-                        <button id="temaPremiumBtn" class="active" onclick="mudarTema('premium')"><i class="fas fa-gem"></i> Premium</button>
-                        <button id="temaDarkBtn" onclick="mudarTema('dark')"><i class="fas fa-moon"></i> Dark</button>
+        <div class="footer">
+            <i class="fas fa-chart-line"></i> AVV • Sistema Inteligente
+        </div>
+                </div> <!-- inner container -->
+            </main>
+        </div> <!-- main column -->
+    </div> <!-- flex layout -->
+
+    <!-- Painel lateral de Configurações -->
+    <div id="avv-settings-overlay" aria-hidden="true" role="presentation"></div>
+    <div id="avv-settings-panel" aria-hidden="true" role="dialog" aria-label="Configurações">
+        <div class="avv-settings-panel-header">
+            <h2>Configurações</h2>
+            <button type="button" class="avv-settings-panel-close" id="avv-settings-close" aria-label="Fechar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="avv-settings-panel-body">
+            <section class="avv-settings-section">
+                <h3 class="avv-settings-section-title"><i class="fas fa-palette"></i> Tema</h3>
+                <div class="avv-settings-row">
+                    <span class="avv-settings-label">Modo</span>
+                    <div class="avv-settings-control avv-settings-theme-buttons">
+                        <button id="temaLightBtn" onclick="mudarTema('light')"><i class="fas fa-sun"></i> Light</button>
+                        <button id="temaDarkBtn" class="active" onclick="mudarTema('dark')"><i class="fas fa-moon"></i> Dark</button>
                         <button id="temaSmartBtn" onclick="mudarTema('smart')"><i class="fas fa-fire"></i> Smart</button>
                         <button id="temaNatureBtn" onclick="mudarTema('nature')"><i class="fas fa-leaf"></i> Nature</button>
+                        <button id="temaOceanBtn" onclick="mudarTema('ocean')"><i class="fas fa-water"></i> Ocean</button>
+                        <button id="temaSunsetBtn" onclick="mudarTema('sunset')"><i class="fas fa-sunset"></i> Sunset</button>
                     </div>
                 </div>
-                
-                <div class="config-item">
-                    <div class="config-label">
-                        <span>🔄 Automático:</span>
-                    </div>
-                    <input type="checkbox" id="temaAuto" onchange="toggleTemaAuto()"> Seguir sistema
+                <div class="avv-settings-row avv-settings-row-check">
+                    <span class="avv-settings-label">Seguir sistema</span>
+                    <input type="checkbox" id="temaAuto" onchange="toggleTemaAuto()" class="avv-settings-checkbox">
                 </div>
-            </div>
-            
-            <!-- BACKUP -->
-            <div class="config-card">
-                <h3 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-database"></i> BACKUP</h3>
-                
-                <div class="config-item">
-                    <div class="config-label">
-                        <span><i class="fas fa-calendar-alt"></i> Último backup:</span>
-                    </div>
-                    <div id="ultimoBackup">Nunca</div>
+            </section>
+
+            <section class="avv-settings-section">
+                <h3 class="avv-settings-section-title"><i class="fas fa-database"></i> Backup</h3>
+                <div class="avv-settings-row">
+                    <span class="avv-settings-label"><i class="fas fa-calendar-alt"></i> Último backup</span>
+                    <span id="ultimoBackup" class="avv-settings-value">Nunca</span>
                 </div>
-                
-                <div class="config-item">
-                    <div class="config-label">
-                        <span><i class="fas fa-sync-alt"></i> Backup automático:</span>
-                    </div>
-                    <div class="config-toggle">
+                <div class="avv-settings-row">
+                    <span class="avv-settings-label">Backup automático</span>
+                    <div class="avv-settings-control avv-settings-toggle">
                         <button id="backupAtivoBtn" class="active" onclick="toggleBackup(true)">Ativado</button>
                         <button id="backupInativoBtn" onclick="toggleBackup(false)">Desativado</button>
                     </div>
                 </div>
-                
-                <div class="config-item">
-                    <div class="config-label">
-                        <span><i class="fas fa-clock"></i> Frequência:</span>
-                    </div>
-                    <select id="backupFrequencia" style="padding:8px; border:2px solid var(--primary-color); border-radius:8px;">
+                <div class="avv-settings-row">
+                    <span class="avv-settings-label">Frequência</span>
+                    <select id="backupFrequencia" class="avv-input avv-settings-select">
                         <option value="1">Diariamente</option>
                         <option value="7">Semanalmente</option>
                         <option value="30">Mensalmente</option>
                     </select>
                 </div>
-                
-                <div class="btn-group" style="margin-top:20px;">
-                    <button class="btn-primary" onclick="fazerBackup()" title="Fazer backup manual agora">
-                        <i class="fas fa-download"></i> FAZER BACKUP AGORA
-                    </button>
-                    <button class="btn-secondary" onclick="restaurarBackup()" title="Restaurar dados de um backup">
-                        <i class="fas fa-upload"></i> RESTAURAR BACKUP
-                    </button>
+                <div class="avv-settings-actions">
+                    <button class="btn-primary" onclick="fazerBackup()" title="Fazer backup agora"><i class="fas fa-download"></i> Backup agora</button>
+                    <button class="btn-secondary" onclick="restaurarBackup()" title="Restaurar backup"><i class="fas fa-upload"></i> Restaurar</button>
                 </div>
-            </div>
-            
-            <!-- MARKETPLACE -->
-            <div class="config-card" style="margin-top:20px;">
-                <h3 style="margin-bottom:20px; color:var(--primary-color);"><i class="fas fa-store"></i> INTEGRAÇÃO COM MARKETPLACE</h3>
-                
-                <div class="ml-status-card">
+            </section>
+
+            <section class="avv-settings-section">
+                <h3 class="avv-settings-section-title"><i class="fas fa-store"></i> Marketplace</h3>
+                <div class="avv-settings-ml-status ml-status-card">
                     <div class="ml-status-icon"><i class="fas fa-store"></i></div>
                     <div class="ml-status-info">
-                        <div class="ml-status-title">Status da Integração</div>
-                        <div class="ml-status-desc" id="mlStatusDesc">Desconectado do marketplace</div>
+                        <div class="ml-status-title">Status</div>
+                        <div class="ml-status-desc" id="mlStatusDesc">Desconectado</div>
                     </div>
                     <div id="mlStatusBadge" class="ml-status-badge ml-badge-disconnected"><i class="fas fa-times-circle"></i> Desconectado</div>
                 </div>
-                
-                <div class="btn-group" style="margin:20px 0;">
-                    <button class="btn-primary" onclick="conectarMarketplace()" id="mlConnectBtn" title="Conectar ao marketplace">
-                        <i class="fas fa-plug"></i> CONECTAR COM MARKETPLACE
-                    </button>
-                    <button class="btn-secondary" onclick="desconectarMarketplace()" id="mlDisconnectBtn" style="display:none;" title="Desconectar do marketplace">
-                        <i class="fas fa-unlink"></i> DESCONECTAR
-                    </button>
+                <div class="avv-settings-actions">
+                    <button class="btn-primary" onclick="conectarMarketplace()" id="mlConnectBtn" title="Conectar"><i class="fas fa-plug"></i> Conectar</button>
+                    <button class="btn-secondary" onclick="desconectarMarketplace()" id="mlDisconnectBtn" style="display:none;" title="Desconectar"><i class="fas fa-unlink"></i> Desconectar</button>
                 </div>
-                
                 <div id="mlConfigSection" style="display:none;">
-                    <h4 style="color:var(--primary-color); margin:20px 0 10px;"><i class="fas fa-sliders-h"></i> Configurações</h4>
-                    
-                    <div class="ml-sync-toggle">
-                        <input type="checkbox" id="mlSyncVendas" checked onchange="salvarConfigML()">
-                        <label for="mlSyncVendas"><i class="fas fa-sync-alt"></i> Importar vendas automaticamente</label>
-                    </div>
-                    
-                    <div class="ml-sync-toggle">
-                        <input type="checkbox" id="mlSyncEstoque" checked onchange="salvarConfigML()">
-                        <label for="mlSyncEstoque"><i class="fas fa-boxes"></i> Sincronizar estoque</label>
-                    </div>
-                    
-                    <h4 style="color:var(--primary-color); margin:20px 0 10px;"><i class="fas fa-chart-bar"></i> Estatísticas</h4>
-                    
+                    <h4 class="avv-card-title" style="margin:var(--space-md) 0 var(--space-sm);">Configurações</h4>
+                    <div class="ml-sync-toggle"><input type="checkbox" id="mlSyncVendas" checked onchange="salvarConfigML()"><label for="mlSyncVendas">Importar vendas automaticamente</label></div>
+                    <div class="ml-sync-toggle"><input type="checkbox" id="mlSyncEstoque" checked onchange="salvarConfigML()"><label for="mlSyncEstoque">Sincronizar estoque</label></div>
+                    <h4 class="avv-card-title" style="margin:var(--space-md) 0 var(--space-sm);">Estatísticas</h4>
                     <div class="ml-stats-grid">
-                        <div class="ml-stat-card">
-                            <div class="ml-stat-value" id="mlUltimaSync">--</div>
-                            <div class="ml-stat-label"><i class="fas fa-clock"></i> Última sincronização</div>
-                        </div>
-                        <div class="ml-stat-card">
-                            <div class="ml-stat-value" id="mlProdutosVinculados">0</div>
-                            <div class="ml-stat-label"><i class="fas fa-link"></i> Produtos vinculados</div>
-                        </div>
+                        <div class="ml-stat-card"><div class="ml-stat-value" id="mlUltimaSync">--</div><div class="ml-stat-label">Última sincronização</div></div>
+                        <div class="ml-stat-card"><div class="ml-stat-value" id="mlProdutosVinculados">0</div><div class="ml-stat-label">Produtos vinculados</div></div>
                     </div>
-                    
-                    <h4 style="color:var(--primary-color); margin:20px 0 10px;"><i class="fas fa-boxes"></i> Produtos Vinculados</h4>
-                    
-                    <div style="max-height:300px; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px;">
+                    <h4 class="avv-card-title" style="margin:var(--space-md) 0 var(--space-sm);">Produtos vinculados</h4>
+                    <div style="max-height:220px; overflow-y:auto; border:1px solid var(--border-color); border-radius:var(--radius-md);">
                         <table class="ml-products-table">
-                            <thead>
-                                <tr>
-                                    <th><i class="fas fa-box"></i> Produto</th>
-                                    <th><i class="fas fa-id-card"></i> ID Marketplace</th>
-                                    <th><i class="fas fa-sort-numeric-up"></i> Estoque</th>
-                                    <th><i class="fas fa-info-circle"></i> Status</th>
-                                    <th><i class="fas fa-cog"></i> Ações</th>
-                                </tr>
-                            </thead>
+                            <thead><tr><th>Produto</th><th>ID</th><th>Estoque</th><th>Status</th><th>Ações</th></tr></thead>
                             <tbody id="mlProductsBody">
-                                <tr>
-                                    <td colspan="5" style="text-align:center; padding:20px;">
-                                        <i class="fas fa-info-circle"></i> Nenhum produto vinculado.
-                                    </td>
-                                </tr>
+                                <tr><td colspan="5" style="text-align:center; padding:16px; color:var(--text-muted);">Nenhum produto vinculado.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <i class="fas fa-chart-line"></i> AVV • Sistema Inteligente
+            </section>
+
+            <!-- Regras Mercado Livre 2026 (Simulação) -->
+            <section class="avv-settings-section">
+                <h3 class="avv-settings-section-title"><i class="fas fa-store"></i> Regras Mercado Livre 2026 (Simulação)</h3>
+                <p class="avv-help-text">Esses campos simulam as novas regras do Mercado Livre para frete e comissão. Não alteram dados reais da sua conta.</p>
+                <div class="avv-settings-item">
+                    <label for="mlTaxaFixaAbaixo79" class="avv-settings-label">Taxa Fixa ML (abaixo R$79)</label>
+                    <input type="number" id="mlTaxaFixaAbaixo79" value="5.00" step="0.01" class="avv-input" placeholder="Ex: R$5.00">
+                </div>
+                <div class="avv-settings-item">
+                    <label for="mlCustoPorGramaAbaixo79" class="avv-settings-label">Custo por Grama ML (abaixo R$79)</label>
+                    <input type="number" id="mlCustoPorGramaAbaixo79" value="0.005" step="0.001" class="avv-input" placeholder="Ex: R$0.005/g">
+                </div>
+                <div class="avv-settings-item">
+                    <label for="mlDescontoFreteAcima79" class="avv-settings-label">Desconto Frete ML (acima R$79) (%)</label>
+                    <input type="number" id="mlDescontoFreteAcima79" value="50" step="1" min="0" max="100" class="avv-input" placeholder="Ex: 50% de desconto">
+                </div>
+                <div class="avv-settings-item">
+                    <label for="mlReputacaoVendedor" class="avv-settings-label">Reputação do Vendedor</label>
+                    <select id="mlReputacaoVendedor" class="avv-input avv-settings-select">
+                        <option value="verde">Verde (Melhor)</option>
+                        <option value="amarelo">Amarelo (Médio)</option>
+                        <option value="vermelho">Vermelho (Pior)</option>
+                    </select>
+                </div>
+                <div class="avv-settings-item">
+                    <label for="mlBonusReputacaoVerde" class="avv-settings-label">Bônus Reputação Verde (%)</label>
+                    <input type="number" id="mlBonusReputacaoVerde" value="1.00" step="0.01" min="0" max="100" class="avv-input" placeholder="Desconto extra na comissão">
+                </div>
+            </section>
+
+            <!-- Como o AVV calcula o lucro -->
+
+            <!-- Como o AVV calcula o lucro -->
+            <section class="avv-settings-section">
+                <h3 class="avv-settings-section-title"><i class="fas fa-info-circle"></i> Como o AVV calcula o lucro</h3>
+                <p class="avv-help-text">Resumo simplificado do modelo usado na aba Vendas e no Dashboard:</p>
+                <ul class="avv-help-text" style="padding-left:18px; margin-top:6px;">
+                    <li>Faturamento = soma dos preços de venda de todos os itens.</li>
+                    <li>Custos diretos = custo do produto + embalagem + frete (regras ML 2026) + deslocamento.</li>
+                    <li>Comissão = preço × % do tipo de anúncio, ajustada pela reputação (bônus verde, se configurado).</li>
+                    <li>Custos operacionais = rateio de custos fixos + pró-labore + impostos + perdas + marketing + taxas de pagamento.</li>
+                    <li>Lucro líquido = faturamento − custos diretos − comissão − custos operacionais.</li>
+                </ul>
+            </section>
         </div>
     </div>
     
     <!-- JavaScript Externo -->
     <script type="module" src="main.js"></script>
+    <script type="module" src="js/modules/precificacao.js"></script>
 </body>
 </html>

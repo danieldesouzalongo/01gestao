@@ -2,6 +2,7 @@
 
 // Imports dos módulos
 import { estado } from './js/core/storage.js';
+import { UI } from './js/core/uiState.js';
 import { vendas } from './js/modules/vendas.js';
 import { estoque } from './js/modules/estoque.js';
 import { historico } from './js/modules/historico.js';
@@ -11,7 +12,7 @@ import { marketplace } from './js/services/marketplace.js';
 import { mostrarNotificacao, formatarReal, formatarPercentual } from './js/core/utils.js';
 import { TAXAS_ANUNCIO, CORES_CLIENTE, FRETES, LIMIARES } from './js/core/constants.js';
 
-// ===== VARIÁVEIS DA META =====
+// ===== VARIÁVEIS DA META (fonte única para todo o sistema) =====
 let metaConfig = {
     valor: 1000
 };
@@ -21,6 +22,9 @@ const metaSalva = localStorage.getItem('metaConfig');
 if (metaSalva) {
     metaConfig = JSON.parse(metaSalva);
 }
+
+// Expõe para dashboard, vendas e storage usarem o mesmo valor
+window.metaConfig = metaConfig;
 
 // ===== FUNÇÕES DA META =====
 window.atualizarMetaValor = function(valor) {
@@ -81,13 +85,20 @@ function atualizarMetaNoDashboard() {
     if (faltaMeta) {
         if (falta <= 0) {
             faltaMeta.innerHTML = '🎯 META ATINGIDA!';
-            faltaMeta.style.color = '#ffd700';
         } else {
             faltaMeta.innerHTML = formatarReal(falta);
-            faltaMeta.style.color = 'white';
         }
     }
     
+    // Atualiza também os elementos de meta na aba Vendas (mesma fonte de verdade)
+    const vendasMetaPercentual = document.getElementById('vendasMetaPercentual');
+    const vendasMetaFaltam = document.getElementById('vendasMetaFaltam');
+    if (vendasMetaPercentual) {
+        const pct = metaValor > 0 ? Math.min((lucroSemana / metaValor) * 100, 100) : 0;
+        vendasMetaPercentual.innerText = pct.toFixed(0) + '%';
+    }
+    if (vendasMetaFaltam) vendasMetaFaltam.innerHTML = formatarReal(Math.max(0, falta));
+
     // Atualiza o card extra
     atualizarMetaCard();
 }
@@ -96,6 +107,21 @@ function atualizarMetaNoDashboard() {
 window.toggleConfig = function() {
     const panel = document.getElementById('configPanel');
     const icon = document.getElementById('configToggleIcon');
+    
+    if (!panel || !icon) return;
+    
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+        icon.innerHTML = '▼';
+    } else {
+        panel.style.display = 'none';
+        icon.innerHTML = '▶';
+    }
+};
+
+window.toggleCustosAvancados = function() {
+    const panel = document.getElementById('custosPanel');
+    const icon = document.getElementById('custosToggleIcon');
     
     if (!panel || !icon) return;
     
@@ -145,18 +171,20 @@ window.formatarPercentual = formatarPercentual;
 // ===== FUNÇÕES DE ABA =====
 
 window.mudarAba = function(aba) {
-    // Remove active de todas as abas
+    // Remove active de todas as abas de conteúdo
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    // Remove active dos itens do sidebar (TailAdmin)
+    document.querySelectorAll('.avv-nav-item').forEach(el => el.classList.remove('avv-nav-active'));
     
     // Ativa a aba selecionada
-    document.getElementById(`aba-${aba}`).classList.add('active');
+    const content = document.getElementById(`aba-${aba}`);
+    if (content) content.classList.add('active');
     
-    // Ativa o botão da aba
-    const idx = ['dashboard', 'vendas', 'estoque', 'historico', 'cenarios', 'config'].indexOf(aba);
-    document.querySelectorAll('.tab')[idx].classList.add('active');
+    // Ativa o item correspondente no sidebar
+    const navEl = document.getElementById(`nav-${aba}`);
+    if (navEl) navEl.classList.add('avv-nav-active');
     
-    // Atualiza dados quando mudar de aba
+    // Atualiza dados quando mudar de aba (config agora é painel lateral)
     switch(aba) {
         case 'vendas':
             vendas.atualizarSelect();
@@ -176,64 +204,66 @@ window.mudarAba = function(aba) {
         case 'cenarios':
             cenarios.atualizar();
             break;
-        case 'config':
-            atualizarConfiguracoes();
-            marketplace.atualizarInterface();
-            break;
     }
+};
+
+// ===== PAINEL DE CONFIGURAÇÕES (lateral) =====
+window.toggleSettingsPanel = function() {
+    UI.toggleSettings();
+    if (UI.isSettingsOpen()) {
+        atualizarConfiguracoes();
+        marketplace.atualizarInterface();
+    }
+};
+
+window.closeSettingsPanel = function() {
+    UI.closeSettings();
 };
 
 // ===== FUNÇÕES DE TEMA =====
 
 window.mudarTema = function(tema) {
-    document.body.setAttribute('data-theme', tema);
-    localStorage.setItem('tema', tema);
+    const valid = ['light', 'dark', 'smart', 'nature', 'ocean', 'sunset'].includes(tema) ? tema : 'dark';
+    document.body.setAttribute('data-theme', valid);
+    localStorage.setItem('tema', valid);
     
-    const premiumBtn = document.getElementById('temaPremiumBtn');
+    const lightBtn = document.getElementById('temaLightBtn');
     const darkBtn = document.getElementById('temaDarkBtn');
     const smartBtn = document.getElementById('temaSmartBtn');
     const natureBtn = document.getElementById('temaNatureBtn');
+    const oceanBtn = document.getElementById('temaOceanBtn');
+    const sunsetBtn = document.getElementById('temaSunsetBtn');
     
-    if (premiumBtn) premiumBtn.classList.remove('active');
+    if (lightBtn) lightBtn.classList.remove('active');
     if (darkBtn) darkBtn.classList.remove('active');
     if (smartBtn) smartBtn.classList.remove('active');
     if (natureBtn) natureBtn.classList.remove('active');
+    if (oceanBtn) oceanBtn.classList.remove('active');
+    if (sunsetBtn) sunsetBtn.classList.remove('active');
     
-    switch(tema) {
-        case 'premium':
-            if (premiumBtn) premiumBtn.classList.add('active');
-            break;
-        case 'dark':
-            if (darkBtn) darkBtn.classList.add('active');
-            break;
-        case 'smart':
-            if (smartBtn) smartBtn.classList.add('active');
-            break;
-        case 'nature':
-            if (natureBtn) natureBtn.classList.add('active');
-            break;
-    }
+    if (valid === 'light' && lightBtn) lightBtn.classList.add('active');
+    if (valid === 'dark' && darkBtn) darkBtn.classList.add('active');
+    if (valid === 'smart' && smartBtn) smartBtn.classList.add('active');
+    if (valid === 'nature' && natureBtn) natureBtn.classList.add('active');
+    if (valid === 'ocean' && oceanBtn) oceanBtn.classList.add('active');
+    if (valid === 'sunset' && sunsetBtn) sunsetBtn.classList.add('active');
     
     const indicator = document.getElementById('temaIndicator');
     if (indicator) {
-        const nomes = {
-            'premium': '💎 Premium',
-            'dark': '🌙 Dark',
-            'smart': '🔥 Smart',
-            'nature': '🌿 Nature'
-        };
-        indicator.innerHTML = nomes[tema] || '💎 Premium';
+        const nomes = { light: 'Light', dark: 'Dark', smart: 'Smart', nature: 'Nature', ocean: 'Ocean', sunset: 'Sunset' };
+        indicator.textContent = nomes[valid] || 'Dark';
+    }
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+        const cores = { light: '#FAFAFA', dark: '#0A0A0B', smart: '#FAFAF9', nature: '#FAFAF8', ocean: '#F0F9FF', sunset: '#FFF7ED' };
+        metaTheme.setAttribute('content', cores[valid] || '#0A0A0B');
     }
 };
 
 window.toggleTemaAuto = function() {
     const auto = document.getElementById('temaAuto')?.checked;
-    if (auto) {
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            mudarTema('dark');
-        } else {
-            mudarTema('premium');
-        }
+    if (auto && window.matchMedia) {
+        mudarTema(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     }
 };
 
@@ -314,6 +344,10 @@ window.excluirVenda = (id) => historico.excluirVenda(id);
 window.simularPreco = (percentual) => cenarios.simularPreco(percentual);
 window.simularCusto = (percentual) => cenarios.simularCusto(percentual);
 window.simularAnuncio = (tipo) => cenarios.simularAnuncio(tipo);
+window.salvarCenarioAtual = () => cenarios.salvarCenarioAtual();
+window.aplicarCenario = (id) => cenarios.aplicarCenario(id);
+window.compararCenario = (id) => cenarios.compararCenario(id);
+window.excluirCenario = (id) => cenarios.excluirCenario(id);
 
 // Marketplace
 window.conectarMarketplace = () => marketplace.conectar();
@@ -327,11 +361,24 @@ window.exportarProdutosParaML = () => marketplace.exportarProdutosParaML();
 // ===== INICIALIZAÇÃO =====
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 AVV - Sistema Inteligente iniciado!');
+    console.log('🚀 AVV - Copiloto de margem iniciado');
     
-    // Carrega tema (PREMIUM como padrão)
-    const temaSalvo = localStorage.getItem('tema') || 'premium';
+    // Tema padrão: Dark Premium
+    const temaSalvo = localStorage.getItem('tema') || 'dark';
     mudarTema(temaSalvo);
+
+    // Painel de configurações: botão engrenagem
+    const btnSettings = document.getElementById('avv-btn-settings');
+    if (btnSettings) btnSettings.addEventListener('click', toggleSettingsPanel);
+
+    // Fechar painel: botão X, overlay, ESC
+    const btnClose = document.getElementById('avv-settings-close');
+    if (btnClose) btnClose.addEventListener('click', closeSettingsPanel);
+    const overlay = document.getElementById('avv-settings-overlay');
+    if (overlay) overlay.addEventListener('click', closeSettingsPanel);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && UI.isSettingsOpen()) closeSettingsPanel();
+    });
     
     // ===== RECUPERA ESTADO DOS RESULTADOS =====
     const resultadosExpandido = localStorage.getItem('resultadosExpandido') !== 'false';
@@ -385,10 +432,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Atualiza configurações
+    // Atualiza dados exibidos no painel (quando aberto)
     atualizarConfiguracoes();
-    
-    console.log('✅ AVV inicializado com sucesso!');
+
+    console.log('✅ AVV pronto');
 });
 
 // Hook para atualizar meta quando vendas mudarem

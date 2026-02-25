@@ -1,12 +1,15 @@
 // ===== FUNÇÕES DE FORMATAÇÃO =====
 
 /**
- * Formata um valor numérico para moeda brasileira (R$)
+ * Formata um valor numérico para moeda brasileira (R$) com separador de milhares
  * @param {number} valor - Valor a ser formatado
- * @returns {string} Valor formatado (ex: R$ 1.234,56)
+ * @returns {string} Valor formatado (ex: R$ 4.800,00)
  */
 export function formatarReal(valor) {
-    return 'R$ ' + valor.toFixed(2).replace('.', ',');
+    const num = Number(valor);
+    const [intPart, decPart] = num.toFixed(2).split('.');
+    const intFormatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return 'R$ ' + intFormatted + ',' + decPart;
 }
 
 /**
@@ -131,4 +134,17 @@ export function validarIntervaloData(dataInicio, dataFim) {
 export function validarPreco(valor) {
     const num = parseFloat(valor);
     return isNaN(num) || num < 0 ? 0 : parseFloat(num.toFixed(2));
+}
+
+/**
+ * Valida um percentual entre 0 e 100
+ * @param {any} valor - Valor a ser validado
+ * @param {number} padrao - Valor padrão caso seja inválido
+ * @returns {number} Percentual clamped entre 0 e 100
+ */
+export function validarPercentual(valor, padrao = 0) {
+    const num = parseFloat(valor);
+    if (isNaN(num) || num < 0) return padrao;
+    if (num > 100) return 100;
+    return num;
 }

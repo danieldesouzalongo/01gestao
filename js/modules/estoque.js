@@ -1,5 +1,5 @@
 import { estado } from '../core/storage.js';
-import { mostrarNotificacao, validarNumero, validarInteiro } from '../core/utils.js';
+import { mostrarNotificacao, validarNumero, validarInteiro, formatarReal } from '../core/utils.js';
 import { LIMIARES } from '../core/constants.js';
 
 // ===== GERENCIADOR DE ESTOQUE =====
@@ -32,24 +32,20 @@ class GerenciadorEstoque {
         
         tbody.innerHTML = html;
         
-        // Totais: número de produtos, quantidade, custo total, peso total, valor a preço
+        // Resumo: número de produtos, quantidade, custo total, peso total (kg), valor a preço
         const n = estado.state.produtos.length;
         const totalQtd = estado.state.produtos.reduce((s, p) => s + (p.quantidade || 0), 0);
         const totalCusto = estado.state.produtos.reduce((s, p) => s + (p.custo || 0) * (p.quantidade || 0), 0);
         const totalPeso = estado.state.produtos.reduce((s, p) => s + (p.peso || 0) * (p.quantidade || 0), 0);
         const totalPreco = estado.state.produtos.reduce((s, p) => s + (p.preco || 0) * (p.quantidade || 0), 0);
         
-        const fmt = (v) => 'R$ ' + (Number(v).toFixed(2)).replace('.', ',');
         const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-        set('estoqueTotalQtd', totalQtd);
-        set('estoqueTotalCusto', fmt(totalCusto));
-        set('estoqueTotalPeso', totalPeso + ' g');
-        set('estoqueTotalPreco', fmt(totalPreco));
+        const pesoKg = (totalPeso / 1000).toFixed(1).replace('.', ',') + ' kg';
         set('estoqueResumoProdutos', n);
         set('estoqueResumoQuantidade', totalQtd);
-        set('estoqueResumoCusto', fmt(totalCusto));
-        set('estoqueResumoPeso', totalPeso >= 1000 ? (totalPeso / 1000).toFixed(2).replace('.', ',') + ' kg' : totalPeso + ' g');
-        set('estoqueResumoPreco', fmt(totalPreco));
+        set('estoqueResumoCusto', formatarReal(totalCusto));
+        set('estoqueResumoPeso', pesoKg);
+        set('estoqueResumoPreco', formatarReal(totalPreco));
         
         // Atualiza alertas de estoque
         this.atualizarAlertas();

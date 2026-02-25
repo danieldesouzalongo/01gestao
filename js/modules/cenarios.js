@@ -1,6 +1,7 @@
 import { estado } from '../core/storage.js';
 import { TAXAS_ANUNCIO } from '../core/constants.js';
 import { formatarReal, formatarPercentual } from '../core/utils.js';
+import { vendas } from './vendas.js';
 
 // ===== GERENCIADOR DE CENÁRIOS =====
 
@@ -14,6 +15,13 @@ class GerenciadorCenarios {
     init() {
         // Atualiza quando as vendas mudarem
         window.addEventListener('estoqueAtualizado', () => this.atualizar());
+        window.addEventListener('vendasAtualizadas', () => this.atualizar());
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.renderizarCenariosSalvos());
+        } else {
+            this.renderizarCenariosSalvos();
+        }
     }
     
     // ===== ATUALIZAÇÃO PRINCIPAL =====
@@ -58,6 +66,157 @@ class GerenciadorCenarios {
             somaPrecos,
             somaCustos
         };
+    }
+
+    // ===== CENÁRIOS SALVOS =====
+
+    salvarCenarioAtual(nome) {
+        const nomeInput = document.getElementById('cenarioNome');
+        const nomeFinal = (nome || nomeInput?.value || '').trim() || 'Cenário sem nome';
+
+        const resultadoVendas = vendas.calcularTotais();
+        const configAtual = estado.getConfiguracoesAtuais();
+
+        const resumo = {
+            faturamento: resultadoVendas.somaPrecos,
+            lucroAntesCustosOp: resultadoVendas.lucroAntesCustosOp,
+            lucroLiquido: resultadoVendas.lucroTotal,
+            margem: resultadoVendas.margemMedia,
+            custosOperacionais: resultadoVendas.custosOperacionaisTotais
+        };
+
+        const cenario = {
+            id: Date.now(),
+            nome: nomeFinal,
+            criadoEm: new Date().toLocaleString(),
+            config: configAtual,
+            resumo
+        };
+
+        estado.state.cenarios.push(cenario);
+        estado.salvarCenarios();
+        this.renderizarCenariosSalvos();
+
+        if (nomeInput) nomeInput.value = '';
+    }
+
+    aplicarCenario(id) {
+        const cenario = estado.state.cenarios.find(c => c.id === id);
+        if (!cenario) return;
+
+        const cfg = cenario.config || {};
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el && val != null) el.value = val;
+        };
+
+        setVal('embalagemBase', cfg.embalagemBase);
+        setVal('outrosCustos', cfg.outrosCustos);
+        setVal('limiteViagem', cfg.limiteViagem);
+        setVal('distancia', cfg.distancia);
+        setVal('consumo', cfg.consumo);
+        setVal('precoGasolina', cfg.precoGasolina);
+        setVal('dashboardMetaValor', cfg.metaLucro);
+
+        setVal('custoFixoMensal', cfg.custoFixoMensal);
+        setVal('vendasMensaisEsperadas', cfg.vendasMensaisEsperadas);
+        setVal('proLaboreMensal', cfg.proLaboreMensal);
+        setVal('impostoPercentual', cfg.impostoPercentual);
+        setVal('perdasPercentual', cfg.perdasPercentual);
+        setVal('marketingPercentual', cfg.marketingPercentual);
+        setVal('taxaPagamentoPercentual', cfg.taxaPagamentoPercentual);
+
+        setVal('custoKmVeiculo', cfg.custoKmVeiculo);
+        setVal('valorHoraVendedor', cfg.valorHoraVendedor);
+        setVal('tempoMedioPorKm', cfg.tempoMedioPorKm);
+        setVal('custoEstacionamento', cfg.custoEstacionamento);
+        setVal('custoPedagio', cfg.custoPedagio);
+
+        if (cfg.tipoAnuncio) {
+            window.selecionarAnuncio?.(cfg.tipoAnuncio);
+        }
+
+        window.atualizarMetaValor?.(cfg.metaLucro);
+        vendas.atualizarVendas();
+    }
+
+    excluirCenario(id) {
+        estado.state.cenarios = estado.state.cenarios.filter(c => c.id !== id);
+        estado.salvarCenarios();
+        this.renderizarCenariosSalvos();
+    }
+
+    compararCenario(id) {
+        const cenario = estado.state.cenarios.find(c => c.id === id);
+        if (!cenario) return;
+
+        const atual = vendas.calcularTotais();
+        const alvo = cenario.resumo;
+
+        const container = document.getElementById('cenariosComparacaoContainer');
+        if (!container) return;
+
+        const linha = (label, a, b, formatter) => {
+            const va = formatter ? formatter(a) : a;
+            const vb = formatter ? formatter(b) : b;
+            return `<tr><td>${label}</td><td>${va}</td><td>${vb}</td></tr>`;
+        };
+
+        const html = `
+            <h4 class="avv-card-title" style="margin-bottom:10px;"><i class="fas fa-balance-scale"></i> Comparação de cenários</h4>
+            <p style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">Atual vs "${cenario.nome}"</p>
+            <div class="tabela-container overflow-x-auto">
+                <table class="tabela-produtos text-sm">
+                    <thead>
+                        <tr>
+                            <th>Métrica</th>
+                            <th>Atual</th>
+                            <th>${cenario.nome}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${linha('Faturamento', atual.somaPrecos, alvo.faturamento, formatarReal)}
+                        ${linha('Lucro antes custos op.', atual.lucroAntesCustosOp, alvo.lucroAntesCustosOp, formatarReal)}
+                        ${linha('Custos operacionais', atual.custosOperacionaisTotais, alvo.custosOperacionais, formatarReal)}
+                        ${linha('Lucro líquido', atual.lucroTotal, alvo.lucroLiquido, formatarReal)}
+                        ${linha('Margem média', atual.margemMedia, alvo.margem, formatarPercentual)}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    renderizarCenariosSalvos() {
+        const container = document.getElementById('cenariosSalvosContainer');
+        if (!container) return;
+
+        const lista = estado.state.cenarios || [];
+        if (lista.length === 0) {
+            container.innerHTML = `<p style="font-size:12px; color:var(--text-secondary);">Nenhum cenário salvo ainda. Use o campo acima para salvar o cenário atual.</p>`;
+            return;
+        }
+
+        const html = lista.map(c => `
+            <div class="cenario-salvo-card">
+                <div class="cenario-salvo-header">
+                    <strong>${c.nome}</strong>
+                    <span class="cenario-salvo-data">${c.criadoEm}</span>
+                </div>
+                <div class="cenario-salvo-body">
+                    <div>Lucro líquido: <span>${formatarReal(c.resumo?.lucroLiquido || 0)}</span></div>
+                    <div>Margem: <span>${formatarPercentual(c.resumo?.margem || 0)}</span></div>
+                </div>
+                <div class="cenario-salvo-actions">
+                    <button class="btn-secondary" type="button" onclick="aplicarCenario(${c.id})">Aplicar</button>
+                    <button class="btn-primary" type="button" onclick="compararCenario(${c.id})">Comparar</button>
+                    <button class="btn-danger" type="button" onclick="excluirCenario(${c.id})">Excluir</button>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = html;
     }
     
     atualizarCardsBase(dados) {
@@ -129,7 +288,7 @@ class GerenciadorCenarios {
         
         if (historico.length < 4) {
             container.innerHTML = `
-                <p style="color:var(--text-primary);">
+                <p class="cenario-texto">
                     📊 Precisamos de pelo menos 4 semanas de histórico para fazer previsões.
                     Atualmente temos ${historico.length} venda(s).
                 </p>
@@ -157,40 +316,38 @@ class GerenciadorCenarios {
         const tendenciaClass = tendencia > 0 ? 'resultado-bom' : 'resultado-ruim';
         const tendenciaSinal = tendencia > 0 ? '📈 +' : '📉 ';
         
-        // HTML da previsão
+        // HTML da previsão (classes em style.css)
         const html = `
-            <div style="margin-bottom:20px;">
-                <h4 style="color:var(--primary-color); margin-bottom:10px;">📈 ANÁLISE DE TENDÊNCIA</h4>
-                <p style="color:var(--text-primary);">Baseado nas últimas ${vendasPorSemana.length} semanas:</p>
-                <p style="color:var(--text-primary);">• Média de vendas: <strong>${media.toFixed(1)} itens/semana</strong></p>
-                <p style="color:var(--text-primary);">• Tendência: <strong class="${tendenciaClass}">${tendenciaSinal}${Math.abs(tendencia).toFixed(1)}%</strong></p>
+            <div class="cenario-secao">
+                <h4 class="cenario-titulo">📈 ANÁLISE DE TENDÊNCIA</h4>
+                <p class="cenario-texto">Baseado nas últimas ${vendasPorSemana.length} semanas:</p>
+                <p class="cenario-texto">• Média de vendas: <strong>${media.toFixed(1)} itens/semana</strong></p>
+                <p class="cenario-texto">• Tendência: <strong class="${tendenciaClass}">${tendenciaSinal}${Math.abs(tendencia).toFixed(1)}%</strong></p>
             </div>
-            
-            <div style="margin-bottom:20px;">
-                <h4 style="color:var(--primary-color); margin-bottom:10px;">🔮 PREVISÕES</h4>
-                <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
-                    <div style="background:var(--bg-primary); padding:15px; border-radius:10px; text-align:center;">
-                        <div style="font-size:12px; color:var(--text-secondary);">Semana 1</div>
-                        <div style="font-size:20px; font-weight:bold; color:var(--primary-color);">${previsoes[0]}</div>
-                        <div style="font-size:11px;">itens</div>
+            <div class="cenario-secao">
+                <h4 class="cenario-titulo">🔮 PREVISÕES</h4>
+                <div class="cenario-previsoes-grid">
+                    <div class="cenario-previsoes-card">
+                        <div class="cenario-previsoes-label">Semana 1</div>
+                        <div class="cenario-previsoes-valor">${previsoes[0]}</div>
+                        <div class="cenario-previsoes-unidade">itens</div>
                     </div>
-                    <div style="background:var(--bg-primary); padding:15px; border-radius:10px; text-align:center;">
-                        <div style="font-size:12px; color:var(--text-secondary);">Semana 2</div>
-                        <div style="font-size:20px; font-weight:bold; color:var(--primary-color);">${previsoes[1]}</div>
-                        <div style="font-size:11px;">itens</div>
+                    <div class="cenario-previsoes-card">
+                        <div class="cenario-previsoes-label">Semana 2</div>
+                        <div class="cenario-previsoes-valor">${previsoes[1]}</div>
+                        <div class="cenario-previsoes-unidade">itens</div>
                     </div>
-                    <div style="background:var(--bg-primary); padding:15px; border-radius:10px; text-align:center;">
-                        <div style="font-size:12px; color:var(--text-secondary);">Semana 3</div>
-                        <div style="font-size:20px; font-weight:bold; color:var(--primary-color);">${previsoes[2]}</div>
-                        <div style="font-size:11px;">itens</div>
+                    <div class="cenario-previsoes-card">
+                        <div class="cenario-previsoes-label">Semana 3</div>
+                        <div class="cenario-previsoes-valor">${previsoes[2]}</div>
+                        <div class="cenario-previsoes-unidade">itens</div>
                     </div>
                 </div>
             </div>
-            
-            <div>
-                <h4 style="color:var(--primary-color); margin-bottom:10px;">⚠️ ALERTA DE ESTOQUE</h4>
-                <p style="color:var(--text-primary);">• Estoque atual: <strong>${estoqueTotal} unidades</strong></p>
-                <p style="color:var(--text-primary);">• Duração estimada: <strong>${semanasRestantes} semanas</strong></p>
+            <div class="cenario-secao">
+                <h4 class="cenario-titulo">⚠️ ALERTA DE ESTOQUE</h4>
+                <p class="cenario-texto">• Estoque atual: <strong>${estoqueTotal} unidades</strong></p>
+                <p class="cenario-texto">• Duração estimada: <strong>${semanasRestantes} semanas</strong></p>
                 ${this.getAlertaEstoque(semanasRestantes)}
             </div>
         `;
@@ -225,20 +382,16 @@ class GerenciadorCenarios {
     
     getAlertaEstoque(semanasRestantes) {
         if (semanasRestantes === '∞') {
-            return '<div class="alerta-ok" style="background:#d4edda; padding:10px; border-radius:5px;">✅ Estoque adequado.</div>';
+            return '<div class="alerta-ok">✅ Estoque adequado.</div>';
         }
-        
         const semanas = parseFloat(semanasRestantes);
-        
         if (semanas < 2) {
-            return '<div class="alerta-urgente" style="background:#f8d7da; padding:10px; border-radius:5px;">🔴 Estoque crítico! Compre mais produtos urgentemente.</div>';
+            return '<div class="alerta-urgente">🔴 Estoque crítico! Compre mais produtos urgentemente.</div>';
         }
-        
         if (semanas < 3) {
-            return '<div class="alerta-atencao" style="background:#fff3cd; padding:10px; border-radius:5px;">🟡 Estoque acabará em breve. Programe compras.</div>';
+            return '<div class="alerta-atencao">🟡 Estoque acabará em breve. Programe compras.</div>';
         }
-        
-        return '<div class="alerta-ok" style="background:#d4edda; padding:10px; border-radius:5px;">✅ Estoque adequado para as próximas semanas.</div>';
+        return '<div class="alerta-ok">✅ Estoque adequado para as próximas semanas.</div>';
     }
     
     // ===== DICAS PERSONALIZADAS =====
@@ -314,7 +467,7 @@ class GerenciadorCenarios {
                 <div class="dica-icone">${d.icone}</div>
                 <div class="dica-texto">
                     <div class="dica-titulo">${d.titulo}</div>
-                    <div style="color:var(--text-primary);">${d.texto}</div>
+                    <div class="dica-descricao">${d.texto}</div>
                 </div>
             </div>
         `).join('');

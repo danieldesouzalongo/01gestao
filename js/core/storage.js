@@ -11,7 +11,8 @@ class GerenciadorEstado {
             tipoAnuncio: 'classico',
             backupAtivo: false,
             ultimoBackup: null,
-            contadorId: 4
+            contadorId: 4,
+            cenarios: []
         };
         this.carregarDoStorage();
     }
@@ -48,6 +49,10 @@ class GerenciadorEstado {
         // Carrega configurações de backup
         this.state.backupAtivo = localStorage.getItem('backupAtivo') === 'true' || false;
         this.state.ultimoBackup = localStorage.getItem('ultimoBackup') || null;
+
+        // Carrega cenários salvos
+        const cenariosSalvos = localStorage.getItem('cenarios');
+        this.state.cenarios = cenariosSalvos ? JSON.parse(cenariosSalvos) : [];
         
         // Calcula próximo ID disponível
         const ultimoId = Math.max(...this.state.produtos.map(p => p.id), 0);
@@ -78,6 +83,10 @@ class GerenciadorEstado {
     salvarMLConfig() {
         localStorage.setItem('mlConfig', JSON.stringify(this.state.mlConfig));
     }
+
+    salvarCenarios() {
+        localStorage.setItem('cenarios', JSON.stringify(this.state.cenarios));
+    }
     
     // ===== GERENCIAMENTO DE IDs =====
     
@@ -93,7 +102,8 @@ class GerenciadorEstado {
             produtos: this.state.produtos,
             historico: this.state.historicoVendas,
             mlConfig: this.state.mlConfig,
-            configuracoes: this.getConfiguracoesAtuais()
+            configuracoes: this.getConfiguracoesAtuais(),
+            cenarios: this.state.cenarios
         };
         
         // Cria arquivo JSON para download
@@ -119,7 +129,27 @@ class GerenciadorEstado {
             distancia: document.getElementById('distancia')?.value || 3.0,
             consumo: document.getElementById('consumo')?.value || 10.0,
             precoGasolina: document.getElementById('precoGasolina')?.value || 6.00,
-            metaLucro: document.getElementById('metaLucro')?.value || 1000
+            metaLucro: (typeof window.metaConfig !== 'undefined' ? window.metaConfig.valor : (document.getElementById('dashboardMetaValor')?.value || 1000)),
+            // Novas configurações de custos operacionais (para backup e futuras expansões)
+            custoFixoMensal: document.getElementById('custoFixoMensal')?.value || 0.00,
+            vendasMensaisEsperadas: document.getElementById('vendasMensaisEsperadas')?.value || 50,
+            proLaboreMensal: document.getElementById('proLaboreMensal')?.value || 0.00,
+            impostoPercentual: document.getElementById('impostoPercentual')?.value || 6.00,
+            perdasPercentual: document.getElementById('perdasPercentual')?.value || 1.00,
+            marketingPercentual: document.getElementById('marketingPercentual')?.value || 2.00,
+            taxaPagamentoPercentual: document.getElementById('taxaPagamentoPercentual')?.value || 4.99,
+            // Novas configurações de logística/deslocamento
+            custoKmVeiculo: document.getElementById('custoKmVeiculo')?.value || 0.00,
+            valorHoraVendedor: document.getElementById('valorHoraVendedor')?.value || 0.00,
+            tempoMedioPorKm: document.getElementById('tempoMedioPorKm')?.value || 1,
+            custoEstacionamento: document.getElementById('custoEstacionamento')?.value || 0.00,
+            custoPedagio: document.getElementById('custoPedagio')?.value || 0.00,
+            // Regras Mercado Livre 2026
+            mlTaxaFixaAbaixo79: document.getElementById('mlTaxaFixaAbaixo79')?.value || 5.00,
+            mlCustoPorGramaAbaixo79: document.getElementById('mlCustoPorGramaAbaixo79')?.value || 0.005,
+            mlDescontoFreteAcima79: document.getElementById('mlDescontoFreteAcima79')?.value || 50,
+            mlReputacaoVendedor: document.getElementById('mlReputacaoVendedor')?.value || 'verde',
+            mlBonusReputacaoVerde: document.getElementById('mlBonusReputacaoVerde')?.value || 1.00
         };
     }
     
@@ -147,6 +177,24 @@ class GerenciadorEstado {
                     if (backup.mlConfig) {
                         this.state.mlConfig = backup.mlConfig;
                         this.salvarMLConfig();
+                    }
+
+                    // Restaura cenários salvos
+                    if (backup.cenarios) {
+                        this.state.cenarios = backup.cenarios;
+                        this.salvarCenarios();
+                    }
+                    
+                    // Restaura meta (fonte única) e campo do dashboard
+                    if (backup.configuracoes && backup.configuracoes.metaLucro != null) {
+                        const valor = parseFloat(backup.configuracoes.metaLucro) || 1000;
+                        if (typeof window.metaConfig !== 'undefined') {
+                            window.metaConfig.valor = valor;
+                            localStorage.setItem('metaConfig', JSON.stringify(window.metaConfig));
+                        }
+                        const metaInput = document.getElementById('dashboardMetaValor');
+                        if (metaInput) metaInput.value = valor;
+                        if (typeof window.atualizarMetaNoDashboard === 'function') window.atualizarMetaNoDashboard();
                     }
                     
                     mostrarNotificacao('✅ Backup restaurado com sucesso!', 'sucesso');

@@ -75,9 +75,9 @@ class GerenciadorDashboard {
         const trendVendas = this.calcularTrend(totalVendasOntem, totalVendasHoje);
         const trendFaturamento = this.calcularTrend(faturamentoOntem, faturamentoHoje);
         
-        const meta = parseFloat(document.getElementById('metaLucro')?.value) || 1000;
+        const meta = (typeof window.metaConfig !== 'undefined' ? window.metaConfig.valor : 1000);
         const lucroSemana = this.calcularLucroSemana();
-        const progressoMeta = Math.min((lucroSemana / meta) * 100, 100);
+        const progressoMeta = meta > 0 ? Math.min((lucroSemana / meta) * 100, 100) : 0;
         
         document.getElementById('dashboardVendasHoje').innerText = totalVendasHoje;
         document.getElementById('dashboardFaturamentoHoje').innerHTML = formatarReal(faturamentoHoje);
@@ -87,7 +87,7 @@ class GerenciadorDashboard {
         this.atualizarTrend('dashboardTrendFaturamento', trendFaturamento);
         
         document.getElementById('dashboardMetaProgresso').innerHTML = progressoMeta.toFixed(0) + '%';
-        document.getElementById('dashboardMetaFaltam').innerHTML = `Faltam ${formatarReal(meta - lucroSemana)}`;
+        document.getElementById('dashboardMetaFaltam').innerHTML = `Faltam ${formatarReal(Math.max(0, meta - lucroSemana))}`;
     }
     
     calcularTrend(valorOntem, valorHoje) {
@@ -195,8 +195,8 @@ class GerenciadorDashboard {
             }
         });
         
-        // Meta não atingida
-        const meta = parseFloat(document.getElementById('metaLucro')?.value) || 1000;
+        // Meta não atingida (usa fonte única window.metaConfig)
+        const meta = (typeof window.metaConfig !== 'undefined' ? window.metaConfig.valor : 1000);
         const lucroSemana = this.calcularLucroSemana();
         if (lucroSemana < meta * 0.5) {
             alertas.push({

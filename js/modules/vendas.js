@@ -1,6 +1,6 @@
 import { estado } from '../core/storage.js';
-import { TAXAS_ANUNCIO, CORES_CLIENTE, FRETES } from '../core/constants.js';
-import { formatarReal, formatarPercentual, mostrarNotificacao, debounce, validarNumero } from '../core/utils.js';
+import { TAXAS_ANUNCIO, FRETES } from '../core/constants.js';
+import { formatarReal, formatarPercentual, mostrarNotificacao, debounce, validarNumero, validarPercentual } from '../core/utils.js';
 
 // ===== GERENCIADOR DE VENDAS =====
 
@@ -23,7 +23,28 @@ class GerenciadorVendas {
     }
 
     initEventListeners() {
-        const inputs = ['embalagemBase', 'outrosCustos', 'distancia', 'consumo', 'precoGasolina', 'metaLucro'];
+        const inputs = [
+            'embalagemBase',
+            'outrosCustos',
+            'distancia',
+            'consumo',
+            'precoGasolina',
+            'dashboardMetaValor',
+            // Novos campos de custos operacionais detalhados
+            'custoFixoMensal',
+            'vendasMensaisEsperadas',
+            'proLaboreMensal',
+            'impostoPercentual',
+            'perdasPercentual',
+            'marketingPercentual',
+            'taxaPagamentoPercentual',
+            // Novos campos de logística/deslocamento
+            'custoKmVeiculo',
+            'valorHoraVendedor',
+            'tempoMedioPorKm',
+            'custoEstacionamento',
+            'custoPedagio'
+        ];
         inputs.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -73,21 +94,68 @@ class GerenciadorVendas {
 
     // ===== FUNÇÕES DE CÁLCULO =====
 
-    calcularFrete(peso) {
+    calcularFrete(peso, valorPedido = 0) {
         if (peso <= 300) return FRETES[300] || 20;
         if (peso <= 500) return FRETES[500] || 25;
         if (peso <= 1000) return FRETES[1000] || 35;
         if (peso <= 2000) return FRETES[2000] || 50;
         if (peso <= 3000) return FRETES[3000] || 65;
         if (peso <= 4000) return FRETES[4000] || 80;
-        return FRETES.default || 100;
+        let frete = FRETES.default || 100;
+
+        // Regras ML 2026 (simulação)
+        const taxaFixa = validarNumero(document.getElementById('mlTaxaFixaAbaixo79')?.value, 0);
+        const custoPorGrama = validarNumero(document.getElementById('mlCustoPorGramaAbaixo79')?.value, 0);
+        const descontoFreteAcima79 = validarPercentual(document.getElementById('mlDescontoFreteAcima79')?.value, 0);
+
+        if (valorPedido > 0 && valorPedido < 79) {
+            frete += taxaFixa + (peso * custoPorGrama);
+        } else if (valorPedido >= 79 && descontoFreteAcima79 > 0) {
+            frete = frete * (1 - descontoFreteAcima79 / 100);
+        }
+
+        return frete;
     }
 
     calcularCustoPorIda() {
         const d = validarNumero(document.getElementById('distancia')?.value, 0);
         const c = validarNumero(document.getElementById('consumo')?.value, 1);
         const g = validarNumero(document.getElementById('precoGasolina')?.value, 0);
-        return c > 0 ? (d / c) * g : 0;
+        const custoCombustivel = c > 0 ? (d / c) * g : 0;
+
+        // Logística 2.0: custos extras de deslocamento
+        const custoKmVeiculo = validarNumero(document.getElementById('custoKmVeiculo')?.value, 0);
+        const valorHoraVendedor = validarNumero(document.getElementById('valorHoraVendedor')?.value, 0);
+        const tempoMedioPorKm = validarNumero(document.getElementById('tempoMedioPorKm')?.value, 0);
+        const custoEstacionamento = validarNumero(document.getElementById('custoEstacionamento')?.value, 0);
+        const custoPedagio = validarNumero(document.getElementById('custoPedagio')?.value, 0);
+
+        const custoKmExtra = custoKmVeiculo * d;
+        const horasDeslocamento = (d * tempoMedioPorKm) / 60; // tempoMedioPorKm em minutos
+        const custoTempo = valorHoraVendedor * horasDeslocamento;
+        const custosFixosViagem = custoEstacionamento + custoPedagio;
+
+        return custoCombustivel + custoKmExtra + custoTempo + custosFixosViagem;
+    }
+
+    obterConfigCustosOperacionais() {
+        const custoFixoMensal = validarNumero(document.getElementById('custoFixoMensal')?.value, 0);
+        const vendasMensaisEsperadas = validarNumero(document.getElementById('vendasMensaisEsperadas')?.value, 0);
+        const proLaboreMensal = validarNumero(document.getElementById('proLaboreMensal')?.value, 0);
+        const impostoPercentual = validarPercentual(document.getElementById('impostoPercentual')?.value, 0);
+        const perdasPercentual = validarPercentual(document.getElementById('perdasPercentual')?.value, 0);
+        const marketingPercentual = validarPercentual(document.getElementById('marketingPercentual')?.value, 0);
+        const taxaPagamentoPercentual = validarPercentual(document.getElementById('taxaPagamentoPercentual')?.value, 0);
+
+        return {
+            custoFixoMensal,
+            vendasMensaisEsperadas,
+            proLaboreMensal,
+            impostoPercentual,
+            perdasPercentual,
+            marketingPercentual,
+            taxaPagamentoPercentual
+        };
     }
 
     // ===== GERENCIAMENTO DE LINHAS =====
@@ -156,9 +224,24 @@ class GerenciadorVendas {
             <td><input type="number" class="qtd" value="1" min="1"></td>
             <td><input type="number" class="custo" value="100.00" step="0.01"></td>
             <td>
-                <button class="btn-confirmar-linha" type="button" title="Confirmar venda desta linha">✓ Vender</button>
-                <button class="btn-duplicar" type="button" title="Duplicar linha">⧉</button>
-                <button class="btn-remover" type="button" title="Remover linha">✕</button>
+                <select class="tipo-pagamento">
+                    <option value="cartao" selected>Cartão</option>
+                    <option value="pix">Pix</option>
+                    <option value="boleto">Boleto</option>
+                </select>
+            </td>
+            <td class="avv-cell-actions">
+                <div class="avv-vendas-actions">
+                    <button class="btn-confirmar-linha avv-action-btn avv-action-btn-primary" type="button" title="Confirmar venda" aria-label="Confirmar venda desta linha">
+                        <i class="fas fa-check" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn-duplicar avv-action-btn avv-action-btn-secondary" type="button" title="Duplicar linha" aria-label="Duplicar esta linha">
+                        <i class="fas fa-copy" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn-remover avv-action-btn avv-action-btn-danger" type="button" title="Remover linha" aria-label="Remover esta linha">
+                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                    </button>
+                </div>
             </td>
         `;
     }
@@ -191,15 +274,16 @@ class GerenciadorVendas {
 
     atualizarIndicadorEstoque(elemento, quantidadeEstoque) {
         if (!elemento) return;
+        elemento.classList.remove('estoque-info-ok', 'estoque-info-alerta', 'estoque-info-critico');
         if (quantidadeEstoque > 5) {
             elemento.textContent = `✓ ${quantidadeEstoque} un.`;
-            elemento.style.color = '#28a745';
+            elemento.classList.add('estoque-info-ok');
         } else if (quantidadeEstoque > 0) {
             elemento.textContent = `⚠ ${quantidadeEstoque} un.`;
-            elemento.style.color = '#ffc107';
+            elemento.classList.add('estoque-info-alerta');
         } else {
             elemento.textContent = '✗ Sem estoque';
-            elemento.style.color = '#dc3545';
+            elemento.classList.add('estoque-info-critico');
         }
     }
 
@@ -224,6 +308,8 @@ class GerenciadorVendas {
             `<option value="${p.id}" data-custo="${p.custo}" data-peso="${p.peso}" data-preco="${p.preco}" data-quantidade="${p.quantidade}">${p.nome}</option>`
         ).join('');
 
+        const tipoPagamentoOriginal = linhaOriginal.querySelector('.tipo-pagamento')?.value || 'cartao';
+
         return `
             <td><input type="text" class="cliente-input" value="${cliente}"></td>
             <td>
@@ -238,9 +324,24 @@ class GerenciadorVendas {
             <td><input type="number" class="qtd" value="${linhaOriginal.querySelector('.qtd').value}" min="1"></td>
             <td><input type="number" class="custo" value="${linhaOriginal.querySelector('.custo').value}" step="0.01"></td>
             <td>
-                <button class="btn-confirmar-linha" type="button" title="Confirmar venda desta linha">✓ Vender</button>
-                <button class="btn-duplicar" type="button" title="Duplicar linha">⧉</button>
-                <button class="btn-remover" type="button" title="Remover linha">✕</button>
+                <select class="tipo-pagamento">
+                    <option value="cartao" ${tipoPagamentoOriginal === 'cartao' ? 'selected' : ''}>Cartão</option>
+                    <option value="pix" ${tipoPagamentoOriginal === 'pix' ? 'selected' : ''}>Pix</option>
+                    <option value="boleto" ${tipoPagamentoOriginal === 'boleto' ? 'selected' : ''}>Boleto</option>
+                </select>
+            </td>
+            <td class="avv-cell-actions">
+                <div class="avv-vendas-actions">
+                    <button class="btn-confirmar-linha avv-action-btn avv-action-btn-primary" type="button" title="Confirmar venda" aria-label="Confirmar venda desta linha">
+                        <i class="fas fa-check" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn-duplicar avv-action-btn avv-action-btn-secondary" type="button" title="Duplicar linha" aria-label="Duplicar esta linha">
+                        <i class="fas fa-copy" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn-remover avv-action-btn avv-action-btn-danger" type="button" title="Remover linha" aria-label="Remover esta linha">
+                        <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                    </button>
+                </div>
             </td>
         `;
     }
@@ -479,20 +580,25 @@ class GerenciadorVendas {
         this.atualizarMeta(resultado.lucroTotal);
         this.atualizarStatus(resultado);
         this.sincronizarSelectConfirmacao();
+        // Notifica outros módulos (ex.: precificação inteligente) que os resultados foram recalculados
+        window.dispatchEvent(new CustomEvent('vendasAtualizadas', { detail: resultado }));
     }
 
     aplicarCoresClientes() {
         this.clienteCores = {};
         let indiceCor = 0;
         const linhas = document.querySelectorAll('#vendasBody tr');
+        const numTints = 5;
 
         linhas.forEach(linha => {
             const cliente = linha.querySelector('.cliente-input')?.value || 'Sem cliente';
-            if (!this.clienteCores[cliente]) {
-                this.clienteCores[cliente] = CORES_CLIENTE[indiceCor % CORES_CLIENTE.length];
+            if (!this.clienteCores.hasOwnProperty(cliente)) {
+                this.clienteCores[cliente] = indiceCor % numTints;
                 indiceCor++;
             }
-            linha.style.backgroundColor = this.clienteCores[cliente];
+            const tintIndex = this.clienteCores[cliente];
+            linha.classList.remove('avv-row-tint-0', 'avv-row-tint-1', 'avv-row-tint-2', 'avv-row-tint-3', 'avv-row-tint-4');
+            linha.classList.add('avv-row-tint-' + tintIndex);
         });
     }
 
@@ -505,6 +611,7 @@ class GerenciadorVendas {
         let somaEmbalagem = 0;
         let somaDeslocamento = 0;
         let pesoTotal = 0;
+        let somaReceitaCartao = 0;
 
         const pedidos = {};
 
@@ -514,9 +621,10 @@ class GerenciadorVendas {
             const peso = parseInt(linha.querySelector('.peso')?.value) || 0;
             const qtd = parseInt(linha.querySelector('.qtd')?.value) || 1;
             const custo = parseFloat(linha.querySelector('.custo')?.value) || 0;
+            const tipoPagamento = linha.querySelector('.tipo-pagamento')?.value || 'cartao';
 
             if (!pedidos[cliente]) {
-                pedidos[cliente] = { itens: [], pesoTotal: 0 };
+                pedidos[cliente] = { itens: [], pesoTotal: 0, valorTotal: 0 };
             }
 
             for (let i = 0; i < qtd; i++) {
@@ -524,19 +632,26 @@ class GerenciadorVendas {
             }
 
             pedidos[cliente].pesoTotal += peso * qtd;
+            pedidos[cliente].valorTotal += preco * qtd;
             totalItens += qtd;
             pesoTotal += peso * qtd;
+
+            if (tipoPagamento === 'cartao') {
+                somaReceitaCartao += preco * qtd;
+            }
         });
 
         const embalagemBase = parseFloat(document.getElementById('embalagemBase')?.value) || 5.50;
         const custoPorIda = this.calcularCustoPorIda();
+        const custosOp = this.obterConfigCustosOperacionais();
 
         Object.keys(pedidos).forEach(cliente => {
             const pedido = pedidos[cliente];
             const itens = pedido.itens;
             const pesoTotalPedido = pedido.pesoTotal;
+            const valorTotalPedido = pedido.valorTotal;
 
-            const fretePedido = this.calcularFrete(pesoTotalPedido);
+            const fretePedido = this.calcularFrete(pesoTotalPedido, valorTotalPedido);
             const embalagemPedido = embalagemBase * itens.length;
             const deslocamentoPedido = custoPorIda;
 
@@ -553,10 +668,31 @@ class GerenciadorVendas {
         const ticketMedio = totalPedidos > 0 ? somaPrecos / totalPedidos : 0;
         const itensPorPedido = totalPedidos > 0 ? totalItens / totalPedidos : 0;
 
-        const taxaAnuncio = TAXAS_ANUNCIO[this.tipoAnuncio] || 0.14;
+        let taxaAnuncio = TAXAS_ANUNCIO[this.tipoAnuncio] || 0.14;
+
+        // Ajuste por reputação (bônus para verde)
+        const reputacao = document.getElementById('mlReputacaoVendedor')?.value || 'verde';
+        const bonusVerde = validarPercentual(document.getElementById('mlBonusReputacaoVerde')?.value, 0);
+        if (reputacao === 'verde' && bonusVerde > 0) {
+            taxaAnuncio = taxaAnuncio * (1 - bonusVerde / 100);
+        }
         const comissaoTotal = somaPrecos * taxaAnuncio;
 
-        const lucroTotal = somaPrecos - somaCustos - somaFretes - somaEmbalagem - somaDeslocamento - comissaoTotal;
+        // Custos operacionais holísticos
+        const vendasBaseRateio = Math.max(custosOp.vendasMensaisEsperadas || 0, 1);
+        const custoFixoPorItem = vendasBaseRateio > 0 ? custosOp.custoFixoMensal / vendasBaseRateio : 0;
+        const proLaborePorItem = vendasBaseRateio > 0 ? custosOp.proLaboreMensal / vendasBaseRateio : 0;
+        const custosFixosRateados = (custoFixoPorItem + proLaborePorItem) * totalItens;
+
+        const impostosTotal = somaPrecos * (custosOp.impostoPercentual / 100);
+        const perdasTotal = somaPrecos * (custosOp.perdasPercentual / 100);
+        const marketingTotal = somaPrecos * (custosOp.marketingPercentual / 100);
+        const taxasPagamentoTotal = somaReceitaCartao * (custosOp.taxaPagamentoPercentual / 100);
+
+        const custosOperacionaisTotais = custosFixosRateados + impostosTotal + perdasTotal + marketingTotal + taxasPagamentoTotal;
+
+        const lucroAntesCustosOp = somaPrecos - somaCustos - somaFretes - somaEmbalagem - somaDeslocamento - comissaoTotal;
+        const lucroTotal = lucroAntesCustosOp - custosOperacionaisTotais;
         const margemMedia = somaPrecos > 0 ? (lucroTotal / somaPrecos) * 100 : 0;
 
         const precoMedio = totalItens > 0 ? somaPrecos / totalItens : 0;
@@ -564,18 +700,21 @@ class GerenciadorVendas {
         const comissaoMedia = totalItens > 0 ? comissaoTotal / totalItens : 0;
         const freteMedio = totalItens > 0 ? somaFretes / totalItens : 0;
         const deslocamentoMedio = totalItens > 0 ? somaDeslocamento / totalItens : 0;
+        const custoOperacionalMedio = totalItens > 0 ? custosOperacionaisTotais / totalItens : 0;
         const lucroMedio = totalItens > 0 ? lucroTotal / totalItens : 0;
-        const margemMediaItem = precoMedio > 0 ? ((precoMedio - custoMedio - freteMedio - somaEmbalagem / Math.max(totalItens, 1) - deslocamentoMedio - comissaoMedia) / precoMedio) * 100 : 0;
+        const margemMediaItem = precoMedio > 0
+            ? ((precoMedio - custoMedio - freteMedio - somaEmbalagem / Math.max(totalItens, 1) - deslocamentoMedio - comissaoMedia - custoOperacionalMedio) / precoMedio) * 100
+            : 0;
 
         const limiteViagem = parseFloat(document.getElementById('limiteViagem')?.value) || 5;
         const totalViagens = limiteViagem > 0 ? Math.ceil((pesoTotal / 1000) / limiteViagem) : 0;
 
         return {
             totalItens, totalPedidos, somaPrecos, somaCustos, somaFretes,
-            somaEmbalagem, somaDeslocamento, comissaoTotal, lucroTotal, margemMedia,
+            somaEmbalagem, somaDeslocamento, comissaoTotal, lucroAntesCustosOp, lucroTotal, margemMedia,
             ticketMedio, itensPorPedido, pesoTotal, totalViagens,
             precoMedio, custoMedio, comissaoMedia, freteMedio, deslocamentoMedio,
-            lucroMedio, margemMediaItem
+            lucroMedio, margemMediaItem, custosOperacionaisTotais
         };
     }
 
@@ -601,6 +740,8 @@ class GerenciadorVendas {
         this.atualizarElemento('freteTotal', formatarReal(resultado.somaFretes));
         this.atualizarElemento('embalagemTotal', formatarReal(resultado.somaEmbalagem));
         this.atualizarElemento('deslocamentoTotal', formatarReal(resultado.somaDeslocamento));
+        this.atualizarElemento('lucroAntesCustosOp', formatarReal(resultado.lucroAntesCustosOp));
+        this.atualizarElemento('custosOperacionaisTotal', formatarReal(resultado.custosOperacionaisTotais));
         this.atualizarElemento('lucroTotal', formatarReal(resultado.lucroTotal));
     }
 
@@ -610,62 +751,92 @@ class GerenciadorVendas {
     }
 
     atualizarMeta(lucroTotal) {
-        const metaLucro = parseFloat(document.getElementById('metaLucro')?.value) || 1000;
-        const percentualMeta = metaLucro > 0 ? (lucroTotal / metaLucro) * 100 : 0;
+        const metaValor = (typeof window.metaConfig !== 'undefined' ? window.metaConfig.valor : 1000);
+        const percentualMeta = metaValor > 0 ? (lucroTotal / metaValor) * 100 : 0;
 
         const metaPercentualEl = document.getElementById('vendasMetaPercentual');
         if (metaPercentualEl) metaPercentualEl.innerText = percentualMeta.toFixed(0) + '%';
 
         const metaFaltamEl = document.getElementById('vendasMetaFaltam');
-        if (metaFaltamEl) metaFaltamEl.innerHTML = formatarReal(Math.max(0, metaLucro - lucroTotal));
+        if (metaFaltamEl) metaFaltamEl.innerHTML = formatarReal(Math.max(0, metaValor - lucroTotal));
     }
 
+    /**
+     * Score de saúde do negócio (uso interno e priorização de alertas).
+     * @returns {'critico'|'atencao'|'saudavel'}
+     */
+    obterSaudeMargem(margemMedia) {
+        if (margemMedia < 20) return 'critico';
+        if (margemMedia < 30) return 'atencao';
+        return 'saudavel';
+    }
+
+    /**
+     * Atualiza status e alertas estratégicos (margem, recomendações).
+     * O bloco é exibido apenas no Dashboard (statusContainer está dentro de #aba-dashboard).
+     * Só mostra conteúdo quando há alertas; se margem >= 30% e nada mais → não exibe nada.
+     */
     atualizarStatus(resultado) {
-        const statusCard = document.getElementById('statusCard');
-        const recomendacao = document.getElementById('recomendacao');
+        const container = document.getElementById('statusContainer');
+        const alertsEl = document.getElementById('statusAlerts');
+        if (!container || !alertsEl) return;
+        // Container está no HTML dentro da aba Dashboard → visível apenas nessa aba
 
-        if (!statusCard || !recomendacao) return;
+        const alertas = [];
+        const saude = this.obterSaudeMargem(resultado.margemMedia);
 
-        let status = 'status-bom';
-        let mensagem = '✅ Vendas em dia!';
-
-        if (resultado.margemMedia < 20) {
-            status = 'status-ruim';
-            mensagem = '❌ Margem muito baixa! Aumente os preços ou reduza custos.';
-        } else if (resultado.margemMedia < 30) {
-            status = 'status-ok';
-            mensagem = '⚠️ Margem abaixo do esperado. Considere ajustar preços.';
-        } else if (resultado.margemMedia >= 35) {
-            status = 'status-excelente';
-            mensagem = '🌟 Excelente margem! Continue assim.';
-        }
-
-        statusCard.className = `status-card ${status}`;
-        statusCard.innerHTML = `<i class="fas fa-chart-line"></i> ${mensagem}`;
-
-        const recomendacoes = [];
-
+        // Nenhum produto na calculadora
         if (resultado.totalItens === 0) {
-            recomendacoes.push('📌 Adicione produtos para começar a calcular.');
+            alertas.push({ nivel: 'atencao', mensagem: 'Adicione produtos à tabela para começar a calcular.', icon: 'fa-calculator' });
         }
 
+        // Margem muito baixa (< 20%) — crítico
+        if (resultado.totalItens > 0 && resultado.margemMedia < 20) {
+            alertas.push({ nivel: 'critico', mensagem: 'Margem muito baixa. Aumente os preços ou reduza custos.', icon: 'fa-chart-line' });
+        }
+
+        // Margem abaixo do esperado (20–29%)
+        if (resultado.totalItens > 0 && resultado.margemMedia >= 20 && resultado.margemMedia < 30) {
+            alertas.push({ nivel: 'atencao', mensagem: 'Margem abaixo do esperado. Considere ajustar preços.', icon: 'fa-exclamation-triangle' });
+        }
+
+        // Dica de preço (margem < 25% e há itens)
         if (resultado.totalItens > 0 && resultado.margemMedia < 25) {
-            recomendacoes.push('💡 Dica: Aumente os preços em 5-10% para melhorar a margem.');
+            alertas.push({ nivel: 'dica', mensagem: 'Aumente os preços em 5–10% para melhorar a margem.', icon: 'fa-lightbulb' });
         }
 
-        if (resultado.somaFretes > resultado.somaPrecos * 0.3) {
-            recomendacoes.push('🚚 Atenção: Frete está alto. Considere negociar com transportadora.');
+        // Frete alto (> 30% do faturamento)
+        if (resultado.totalItens > 0 && resultado.somaPrecos > 0 && resultado.somaFretes > resultado.somaPrecos * 0.3) {
+            alertas.push({ nivel: 'atencao', mensagem: 'Frete está alto. Considere negociar com transportadora.', icon: 'fa-truck' });
         }
 
-        if (resultado.comissaoTotal > resultado.somaPrecos * 0.25) {
-            recomendacoes.push('📊 Comissão alta. Considere usar anúncio Clássico (14%).');
+        // Comissão alta (> 25% do faturamento)
+        if (resultado.totalItens > 0 && resultado.somaPrecos > 0 && resultado.comissaoTotal > resultado.somaPrecos * 0.25) {
+            alertas.push({ nivel: 'dica', mensagem: 'Comissão alta. Considere anúncio Clássico (14%).', icon: 'fa-percent' });
         }
 
-        if (recomendacoes.length === 0) {
-            recomendacoes.push('🎯 Tudo está ótimo! Continue assim.');
+        // Nenhum produto cadastrado no sistema
+        if (estado.state.produtos.length === 0) {
+            alertas.push({ nivel: 'atencao', mensagem: 'Nenhum produto cadastrado. Cadastre produtos no Estoque.', icon: 'fa-boxes' });
         }
 
-        recomendacao.innerHTML = recomendacoes.map(r => `<p style="margin:5px 0;">${r}</p>`).join('');
+        // Ordenar: crítico → atenção → dica
+        const ordem = { critico: 0, atencao: 1, dica: 2 };
+        alertas.sort((a, b) => (ordem[a.nivel] ?? 2) - (ordem[b.nivel] ?? 2));
+
+        if (alertas.length === 0) {
+            container.style.display = 'none';
+            alertsEl.innerHTML = '';
+            return;
+        }
+
+        container.style.display = '';
+        alertsEl.innerHTML = alertas.map(a => `
+            <div class="avv-alerta avv-alerta-${a.nivel}" role="alert">
+                <i class="fas ${a.icon}" aria-hidden="true"></i>
+                <span>${a.mensagem}</span>
+            </div>
+        `).join('');
     }
 
     // ===== SINCRONIZAÇÃO DO SELECT COM LINHAS DA TABELA =====
